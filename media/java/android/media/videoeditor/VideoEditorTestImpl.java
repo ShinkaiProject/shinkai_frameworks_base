@@ -1,0 +1,1202 @@
+/*
+ * Copyright (C) 2010 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package android.media.videoeditor;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
+import org.xmlpull.v1.XmlPullParser;
+import org.xmlpull.v1.XmlPullParserException;
+import org.xmlpull.v1.XmlSerializer;
+
+import android.graphics.Rect;
+import android.util.Log;
+import android.util.Xml;
+import android.view.SurfaceHolder;
+
+/**
+ * The VideoEditor implementation {@hide}
+ */
+public class VideoEditorTestImpl implements VideoEditor {
+    // Logging
+    private static final String TAG = "VideoEditorImpl";
+
+    // The project filename
+    private static final String PROJECT_FILENAME = "videoeditor.xml";
+
+    // XML tags
+    private static final String TAG_PROJECT = "project";
+    private static final String TAG_MEDIA_ITEMS = "media_items";
+    private static final String TAG_MEDIA_ITEM = "media_item";
+    private static final String TAG_TRANSITIONS = "transitions";
+    private static final String TAG_TRANSITION = "transition";
+    private static final String TAG_OVERLAYS = "overlays";
+    private static final String TAG_OVERLAY = "overlay";
+    private static final String TAG_OVERLAY_USER_ATTRIBUTES = "overlay_user_attributes";
+    private static final String TAG_EFFECTS = "effects";
+    private static final String TAG_EFFECT = "effect";
+    private static final String TAG_AUDIO_TRACKS = "audio_tracks";
+    private static final String TAG_AUDIO_TRACK = "audio_track";
+
+    private static final String ATTR_ID = "id";
+    private static final String ATTR_FILENAME = "filename";
+    private static final String ATTR_AUDIO_WAVEFORM_FILENAME = "wavefoem";
+    private static final String ATTR_RENDERING_MODE = "rendering_mode";
+    private static final String ATTR_ASPECT_RATIO = "aspect_ratio";
+    private static final String ATTR_TYPE = "type";
+    private static final String ATTR_DURATION = "duration";
+    private static final String ATTR_START_TIME = "start_time";
+    private static final String ATTR_BEGIN_TIME = "begin_time";
+    private static final String ATTR_END_TIME = "end_time";
+    private static final String ATTR_VOLUME = "volume";
+    private static final String ATTR_BEHAVIOR = "behavior";
+    private static final String ATTR_DIRECTION = "direction";
+    private static final String ATTR_BLENDING = "blending";
+    private static final String ATTR_INVERT = "invert";
+    private static final String ATTR_MASK = "mask";
+    private static final String ATTR_BEFORE_MEDIA_ITEM_ID = "before_media_item";
+    private static final String ATTR_AFTER_MEDIA_ITEM_ID = "after_media_item";
+    private static final String ATTR_COLOR_EFFECT_TYPE = "color_type";
+    private static final String ATTR_COLOR_EFFECT_VALUE = "color_value";
+    private static final String ATTR_START_RECT_L = "start_l";
+    private static final String ATTR_START_RECT_T = "start_t";
+    private static final String ATTR_START_RECT_R = "start_r";
+    private static final String ATTR_START_RECT_B = "start_b";
+    private static final String ATTR_END_RECT_L = "end_l";
+    private static final String ATTR_END_RECT_T = "end_t";
+    private static final String ATTR_END_RECT_R = "end_r";
+    private static final String ATTR_END_RECT_B = "end_b";
+    private static final String ATTR_LOOP = "loop";
+    private static final String ATTR_MUTED = "muted";
+
+    // Instance variables
+    private long mDurationMs;
+    private final String mProjectPath;
+    private final List<MediaItem> mMediaItems = new ArrayList<MediaItem>();
+    private final List<AudioTrack> mAudioTracks = new ArrayList<AudioTrack>();
+    private final List<Transition> mTransitions = new ArrayList<Transition>();
+    private PreviewThread mPreviewThread;
+    private int mAspectRatio;
+
+    /**
+     * The preview thread
+     */
+    private class PreviewThread extends Thread {
+        // Instance variables
+        private final static long FRAME_DURATION = 33;
+
+        // Instance variables
+        private final PreviewProgressListener mListener;
+        private final int mCallbackAfterFrameCount;
+        private final long mFromMs, mToMs;
+        private boolean mRun, mLoop;
+        private long mPositionMs;
+
+        /**
+         * Constructor
+         *
+         * @param fromMs Start preview at this position
+         * @param toMs The time (relative to the timeline) at which the preview
+         *            will stop. Use -1 to play to the end of the timeline
+         * @param callbackAfterFrameCount The listener interface should be
+         *            invoked after the number of frames specified by this
+         *            parameter.
+         * @param loop true if the preview should be looped once it reaches the
+         *            end
+         * @param listener The listener
+         */
+        public PreviewThread(long fromMs, long toMs, boolean loop, int callbackAfterFrameCount,
+                PreviewProgressListener listener) {
+            mPositionMs = mFromMs = fromMs;
+            if (toMs < 0) {
+                mToMs = mDurationMs;
+            } else {
+                mToMs = toMs;
+            }
+            mLoop = loop;
+            mCallbackAfterFrameCount = callbackAfterFrameCount;
+            mListener = listener;
+            mRun = true;
+        }
+
+        /*
+         * {@inheritDoc}
+         */
+        @Override
+        public void run() {
+            if (Log.isLoggable(TAG, Log.DEBUG)) {
+                Log.d(TAG, "===> PreviewThread.run enter");
+            }
+            int frameCount = 0;
+            while (mRun) {
+                try {
+                    sleep(FRAME_DURATION);
+                } catch (InterruptedException ex) {
+                    break;
+                }
+                frameCount++;
+                mPositionMs += FRAME_DURATION;
+
+                if (mPositionMs >= mToMs) {
+                    if (!mLoop) {
+                        if (mListener != null) {
+                            mListener.onProgress(VideoEditorTestImpl.this, mPositionMs, true);
+                        }
+                        if (Log.isLoggable(TAG, Log.DEBUG)) {
+                            Log.d(TAG, "PreviewThread.run playback complete");
+                        }
+                        break;
+                    } else {
+                        // Fire a notification for the end of the clip
+                        if (mListener != null) {
+                            mListener.onProgress(VideoEditorTestImpl.this, mToMs, false);
+                        }
+
+                        // Rewind
+                        mPositionMs = mFromMs;
+                        if (mListener != null) {
+                            mListener.onProgress(VideoEditorTestImpl.this, mPositionMs, false);
+                        }
+                        if (Log.isLoggable(TAG, Log.DEBUG)) {
+                            Log.d(TAG, "PreviewThread.run playback complete");
+                        }
+                        frameCount = 0;
+                    }
+                } else {
+                    if (frameCount == mCallbackAfterFrameCount) {
+                        if (mListener != null) {
+                            mListener.onProgress(VideoEditorTestImpl.this, mPositionMs, false);
+                        }
+                        frameCount = 0;
+                    }
+                }
+            }
+
+            if (Log.isLoggable(TAG, Log.DEBUG)) {
+                Log.d(TAG, "===> PreviewThread.run exit");
+            }
+        }
+
+        /**
+         * Stop the preview
+         *
+         * @return The stop position
+         */
+        public long stopPreview() {
+            mRun = false;
+            try {
+                join();
+            } catch (InterruptedException ex) {
+            }
+            return mPositionMs;
+        }
+    };
+
+    /**
+     * Constructor
+     *
+     * @param projectPath
+     */
+    public VideoEditorTestImpl(String projectPath) throws IOException {
+        mProjectPath = projectPath;
+        final File projectXml = new File(projectPath, PROJECT_FILENAME);
+        if (projectXml.exists()) {
+            try {
+                load();
+            } catch (Exception ex) {
+                throw new IOException(ex);
+            }
+        } else {
+            mAspectRatio = MediaProperties.ASPECT_RATIO_16_9;
+            mDurationMs = 0;
+        }
+    }
+
+    /*
+     * {@inheritDoc}
+     */
+    public String getPath() {
+        return mProjectPath;
+    }
+
+    /*
+     * {@inheritDoc}
+     */
+    public synchronized void addMediaItem(MediaItem mediaItem) {
+        if (mPreviewThread != null) {
+            throw new IllegalStateException("Previewing is in progress");
+        }
+
+        if (mMediaItems.contains(mediaItem)) {
+            throw new IllegalArgumentException("Media item already exists: " + mediaItem.getId());
+        }
+
+        // Invalidate the end transition if necessary
+        final int mediaItemsCount = mMediaItems.size();
+        if ( mediaItemsCount > 0) {
+            removeTransitionAfter(mediaItemsCount - 1);
+        }
+
+        // Add the new media item
+        mMediaItems.add(mediaItem);
+
+        computeTimelineDuration();
+    }
+
+    /*
+     * {@inheritDoc}
+     */
+    public synchronized void insertMediaItem(MediaItem mediaItem, String afterMediaItemId) {
+        if (mPreviewThread != null) {
+            throw new IllegalStateException("Previewing is in progress");
+        }
+
+        if (mMediaItems.contains(mediaItem)) {
+            throw new IllegalArgumentException("Media item already exists: " + mediaItem.getId());
+        }
+
+        if (afterMediaItemId == null) {
+            if (mMediaItems.size() > 0) {
+                // Invalidate the transition at the beginning of the timeline
+                removeTransitionBefore(0);
+            }
+            mMediaItems.add(0, mediaItem);
+            computeTimelineDuration();
+        } else {
+            final int mediaItemCount = mMediaItems.size();
+            for (int i = 0; i < mediaItemCount; i++) {
+                final MediaItem mi = mMediaItems.get(i);
+                if (mi.getId().equals(afterMediaItemId)) {
+                    // Invalidate the transition at this position
+                    removeTransitionAfter(i);
+                    // Insert the new media item
+                    mMediaItems.add(i + 1, mediaItem);
+                    computeTimelineDuration();
+                    return;
+                }
+            }
+            throw new IllegalArgumentException("MediaItem not found: " + afterMediaItemId);
+        }
+    }
+
+    /*
+     * {@inheritDoc}
+     */
+    public synchronized void moveMediaItem(String mediaItemId, String afterMediaItemId) {
+        if (mPreviewThread != null) {
+            throw new IllegalStateException("Previewing is in progress");
+        }
+
+        final MediaItem moveMediaItem = removeMediaItem(mediaItemId);
+        if (moveMediaItem == null) {
+            throw new IllegalArgumentException("Target MediaItem not found: " + mediaItemId);
+        }
+
+        if (afterMediaItemId == null) {
+            if (mMediaItems.size() > 0) {
+                // Invalidate adjacent transitions at the insertion point
+                removeTransitionBefore(0);
+
+                // Insert the media item at the new position
+                mMediaItems.add(0, moveMediaItem);
+                computeTimelineDuration();
+            } else {
+                throw new IllegalStateException("Cannot move media item (it is the only item)");
+            }
+        } else {
+            final int mediaItemCount = mMediaItems.size();
+            for (int i = 0; i < mediaItemCount; i++) {
+                final MediaItem mi = mMediaItems.get(i);
+                if (mi.getId().equals(afterMediaItemId)) {
+                    // Invalidate adjacent transitions at the insertion point
+                    removeTransitionAfter(i);
+                    // Insert the media item at the new position
+                    mMediaItems.add(i + 1, moveMediaItem);
+                    computeTimelineDuration();
+                    return;
+                }
+            }
+
+            throw new IllegalArgumentException("MediaItem not found: " + afterMediaItemId);
+        }
+    }
+
+    /*
+     * {@inheritDoc}
+     */
+    public synchronized MediaItem removeMediaItem(String mediaItemId) {
+        if (mPreviewThread != null) {
+            throw new IllegalStateException("Previewing is in progress");
+        }
+
+        final MediaItem mediaItem = getMediaItem(mediaItemId);
+        if (mediaItem != null) {
+            // Remove the media item
+            mMediaItems.remove(mediaItem);
+            // Remove the adjacent transitions
+            removeAdjacentTransitions(mediaItem);
+            computeTimelineDuration();
+        }
+
+        return mediaItem;
+    }
+
+    /*
+     * {@inheritDoc}
+     */
+    public synchronized MediaItem getMediaItem(String mediaItemId) {
+        for (MediaItem mediaItem : mMediaItems) {
+            if (mediaItem.getId().equals(mediaItemId)) {
+                return mediaItem;
+            }
+        }
+
+        return null;
+    }
+
+    /*
+     * {@inheritDoc}
+     */
+    public synchronized List<MediaItem> getAllMediaItems() {
+        return mMediaItems;
+    }
+
+    /*
+     * {@inheritDoc}
+     */
+    public synchronized void removeAllMediaItems() {
+        mMediaItems.clear();
+
+        // Invalidate all transitions
+        for (Transition transition : mTransitions) {
+            transition.invalidate();
+        }
+        mTransitions.clear();
+
+        mDurationMs = 0;
+    }
+
+    /*
+     * {@inheritDoc}
+     */
+    public synchronized void addTransition(Transition transition) {
+        mTransitions.add(transition);
+
+        final MediaItem beforeMediaItem = transition.getBeforeMediaItem();
+        final MediaItem afterMediaItem = transition.getAfterMediaItem();
+
+        // Cross reference the transitions
+        if (afterMediaItem != null) {
+            // If a transition already exists at the specified position then
+            // invalidate it.
+            if (afterMediaItem.getEndTransition() != null) {
+                afterMediaItem.getEndTransition().invalidate();
+            }
+            afterMediaItem.setEndTransition(transition);
+        }
+
+        if (beforeMediaItem != null) {
+            // If a transition already exists at the specified position then
+            // invalidate it.
+            if (beforeMediaItem.getBeginTransition() != null) {
+                beforeMediaItem.getBeginTransition().invalidate();
+            }
+            beforeMediaItem.setBeginTransition(transition);
+        }
+
+        computeTimelineDuration();
+    }
+
+    /*
+     * {@inheritDoc}
+     */
+    public synchronized Transition removeTransition(String transitionId) {
+        if (mPreviewThread != null) {
+            throw new IllegalStateException("Previewing is in progress");
+        }
+
+        final Transition transition = getTransition(transitionId);
+        if (transition == null) {
+            throw new IllegalStateException("Transition not found: " + transitionId);
+        }
+
+        // Remove the transition references
+        final MediaItem afterMediaItem = transition.getAfterMediaItem();
+        if (afterMediaItem != null) {
+            afterMediaItem.setEndTransition(null);
+        }
+
+        final MediaItem beforeMediaItem = transition.getBeforeMediaItem();
+        if (beforeMediaItem != null) {
+            beforeMediaItem.setBeginTransition(null);
+        }
+
+        mTransitions.remove(transition);
+        transition.invalidate();
+        computeTimelineDuration();
+
+        return transition;
+    }
+
+    /*
+     * {@inheritDoc}
+     */
+    public List<Transition> getAllTransitions() {
+        return mTransitions;
+    }
+
+    /*
+     * {@inheritDoc}
+     */
+    public Transition getTransition(String transitionId) {
+        for (Transition transition : mTransitions) {
+            if (transition.getId().equals(transitionId)) {
+                return transition;
+            }
+        }
+
+        return null;
+    }
+
+    /*
+     * {@inheritDoc}
+     */
+    public synchronized void addAudioTrack(AudioTrack audioTrack) {
+        if (mPreviewThread != null) {
+            throw new IllegalStateException("Previewing is in progress");
+        }
+
+        mAudioTracks.add(audioTrack);
+    }
+
+    /*
+     * {@inheritDoc}
+     */
+    public synchronized void insertAudioTrack(AudioTrack audioTrack, String afterAudioTrackId) {
+        if (mPreviewThread != null) {
+            throw new IllegalStateException("Previewing is in progress");
+        }
+
+        if (afterAudioTrackId == null) {
+            mAudioTracks.add(0, audioTrack);
+        } else {
+            final int audioTrackCount = mAudioTracks.size();
+            for (int i = 0; i < audioTrackCount; i++) {
+                AudioTrack at = mAudioTracks.get(i);
+                if (at.getId().equals(afterAudioTrackId)) {
+                    mAudioTracks.add(i + 1, audioTrack);
+                    return;
+                }
+            }
+
+            throw new IllegalArgumentException("AudioTrack not found: " + afterAudioTrackId);
+        }
+    }
+
+    /*
+     * {@inheritDoc}
+     */
+    public synchronized void moveAudioTrack(String audioTrackId, String afterAudioTrackId) {
+        throw new IllegalStateException("Not supported");
+    }
+
+    /*
+     * {@inheritDoc}
+     */
+    public synchronized AudioTrack removeAudioTrack(String audioTrackId) {
+        if (mPreviewThread != null) {
+            throw new IllegalStateException("Previewing is in progress");
+        }
+
+        final AudioTrack audioTrack = getAudioTrack(audioTrackId);
+        if (audioTrack != null) {
+            mAudioTracks.remove(audioTrack);
+        }
+
+        return audioTrack;
+    }
+
+    /*
+     * {@inheritDoc}
+     */
+    public AudioTrack getAudioTrack(String audioTrackId) {
+        for (AudioTrack at : mAudioTracks) {
+            if (at.getId().equals(audioTrackId)) {
+                return at;
+            }
+        }
+
+        return null;
+    }
+
+    /*
+     * {@inheritDoc}
+     */
+    public List<AudioTrack> getAllAudioTracks() {
+        return mAudioTracks;
+    }
+
+    /*
+     * {@inheritDoc}
+     */
+    public void save() throws IOException {
+        final XmlSerializer serializer = Xml.newSerializer();
+        final StringWriter writer = new StringWriter();
+        serializer.setOutput(writer);
+        serializer.startDocument("UTF-8", true);
+        serializer.startTag("", TAG_PROJECT);
+        serializer.attribute("", ATTR_ASPECT_RATIO, Integer.toString(mAspectRatio));
+
+        serializer.startTag("", TAG_MEDIA_ITEMS);
+        for (MediaItem mediaItem : mMediaItems) {
+            serializer.startTag("", TAG_MEDIA_ITEM);
+            serializer.attribute("", ATTR_ID, mediaItem.getId());
+            serializer.attribute("", ATTR_TYPE, mediaItem.getClass().getSimpleName());
+            serializer.attribute("", ATTR_FILENAME, mediaItem.getFilename());
+            serializer.attribute("", ATTR_RENDERING_MODE, Integer.toString(
+                    mediaItem.getRenderingMode()));
+            if (mediaItem instanceof MediaVideoItem) {
+                final MediaVideoItem mvi = (MediaVideoItem)mediaItem;
+                serializer
+                        .attribute("", ATTR_BEGIN_TIME, Long.toString(mvi.getBoundaryBeginTime()));
+                serializer.attribute("", ATTR_END_TIME, Long.toString(mvi.getBoundaryEndTime()));
+                serializer.attribute("", ATTR_VOLUME, Integer.toString(mvi.getVolume()));
+                serializer.attribute("", ATTR_MUTED, Boolean.toString(mvi.isMuted()));
+                if (mvi.getAudioWaveformFilename() != null) {
+                    serializer.attribute("", ATTR_AUDIO_WAVEFORM_FILENAME,
+                            mvi.getAudioWaveformFilename());
+                }
+            } else if (mediaItem instanceof MediaImageItem) {
+                serializer.attribute("", ATTR_DURATION,
+                        Long.toString(mediaItem.getTimelineDuration()));
+            }
+
+            final List<Overlay> overlays = mediaItem.getAllOverlays();
+            if (overlays.size() > 0) {
+                serializer.startTag("", TAG_OVERLAYS);
+                for (Overlay overlay : overlays) {
+                    serializer.startTag("", TAG_OVERLAY);
+                    serializer.attribute("", ATTR_ID, overlay.getId());
+                    serializer.attribute("", ATTR_TYPE, overlay.getClass().getSimpleName());
+                    serializer.attribute("", ATTR_BEGIN_TIME,
+                            Long.toString(overlay.getStartTime()));
+                    serializer.attribute("", ATTR_DURATION, Long.toString(overlay.getDuration()));
+                    if (overlay instanceof OverlayFrame) {
+                        final OverlayFrame overlayFrame = (OverlayFrame)overlay;
+                        overlayFrame.save(getPath());
+                        if (overlayFrame.getFilename() != null) {
+                            serializer.attribute("", ATTR_FILENAME, overlayFrame.getFilename());
+                        }
+                    }
+
+                    // Save the user attributes
+                    serializer.startTag("", TAG_OVERLAY_USER_ATTRIBUTES);
+                    final Map<String, String> userAttributes = overlay.getUserAttributes();
+                    for (String name : userAttributes.keySet()) {
+                        final String value = userAttributes.get(name);
+                        if (value != null) {
+                            serializer.attribute("", name, value);
+                        }
+                    }
+                    serializer.endTag("", TAG_OVERLAY_USER_ATTRIBUTES);
+
+                    serializer.endTag("", TAG_OVERLAY);
+                }
+                serializer.endTag("", TAG_OVERLAYS);
+            }
+
+            final List<Effect> effects = mediaItem.getAllEffects();
+            if (effects.size() > 0) {
+                serializer.startTag("", TAG_EFFECTS);
+                for (Effect effect : effects) {
+                    serializer.startTag("", TAG_EFFECT);
+                    serializer.attribute("", ATTR_ID, effect.getId());
+                    serializer.attribute("", ATTR_TYPE, effect.getClass().getSimpleName());
+                    serializer.attribute("", ATTR_BEGIN_TIME,
+                            Long.toString(effect.getStartTime()));
+                    serializer.attribute("", ATTR_DURATION, Long.toString(effect.getDuration()));
+                    if (effect instanceof EffectColor) {
+                        final EffectColor colorEffect = (EffectColor)effect;
+                        serializer.attribute("", ATTR_COLOR_EFFECT_TYPE,
+                                Integer.toString(colorEffect.getType()));
+                        if (colorEffect.getType() == EffectColor.TYPE_COLOR) {
+                            serializer.attribute("", ATTR_COLOR_EFFECT_VALUE,
+                                    Integer.toString(colorEffect.getParam()));
+                        }
+                    } else if (effect instanceof EffectKenBurns) {
+                        final Rect startRect = ((EffectKenBurns)effect).getStartRect();
+                        serializer.attribute("", ATTR_START_RECT_L,
+                                Integer.toString(startRect.left));
+                        serializer.attribute("", ATTR_START_RECT_T,
+                                Integer.toString(startRect.top));
+                        serializer.attribute("", ATTR_START_RECT_R,
+                                Integer.toString(startRect.right));
+                        serializer.attribute("", ATTR_START_RECT_B,
+                                Integer.toString(startRect.bottom));
+
+                        final Rect endRect = ((EffectKenBurns)effect).getEndRect();
+                        serializer.attribute("", ATTR_END_RECT_L, Integer.toString(endRect.left));
+                        serializer.attribute("", ATTR_END_RECT_T, Integer.toString(endRect.top));
+                        serializer.attribute("", ATTR_END_RECT_R, Integer.toString(endRect.right));
+                        serializer.attribute("", ATTR_END_RECT_B,
+                                Integer.toString(endRect.bottom));
+                    }
+
+                    serializer.endTag("", TAG_EFFECT);
+                }
+                serializer.endTag("", TAG_EFFECTS);
+            }
+
+            serializer.endTag("", TAG_MEDIA_ITEM);
+        }
+        serializer.endTag("", TAG_MEDIA_ITEMS);
+
+        serializer.startTag("", TAG_TRANSITIONS);
+
+        for (Transition transition : mTransitions) {
+            serializer.startTag("", TAG_TRANSITION);
+            serializer.attribute("", ATTR_ID, transition.getId());
+            serializer.attribute("", ATTR_TYPE, transition.getClass().getSimpleName());
+            serializer.attribute("", ATTR_DURATION, Long.toString(transition.getDuration()));
+            serializer.attribute("", ATTR_BEHAVIOR, Integer.toString(transition.getBehavior()));
+            final MediaItem afterMediaItem = transition.getAfterMediaItem();
+            if (afterMediaItem != null) {
+                serializer.attribute("", ATTR_AFTER_MEDIA_ITEM_ID, afterMediaItem.getId());
+            }
+
+            final MediaItem beforeMediaItem = transition.getBeforeMediaItem();
+            if (beforeMediaItem != null) {
+                serializer.attribute("", ATTR_BEFORE_MEDIA_ITEM_ID, beforeMediaItem.getId());
+            }
+
+            if (transition instanceof TransitionSliding) {
+                serializer.attribute("", ATTR_DIRECTION,
+                        Integer.toString(((TransitionSliding)transition).getDirection()));
+            } else if (transition instanceof TransitionAlpha) {
+                TransitionAlpha ta = (TransitionAlpha)transition;
+                serializer.attribute("", ATTR_BLENDING, Integer.toString(ta.getBlendingPercent()));
+                serializer.attribute("", ATTR_INVERT, Boolean.toString(ta.isInvert()));
+                if (ta.getMaskFilename() != null) {
+                    serializer.attribute("", ATTR_MASK, ta.getMaskFilename());
+                }
+            }
+            serializer.endTag("", TAG_TRANSITION);
+        }
+        serializer.endTag("", TAG_TRANSITIONS);
+
+        serializer.startTag("", TAG_AUDIO_TRACKS);
+        for (AudioTrack at : mAudioTracks) {
+            serializer.startTag("", TAG_AUDIO_TRACK);
+            serializer.attribute("", ATTR_ID, at.getId());
+            serializer.attribute("", ATTR_FILENAME, at.getFilename());
+            serializer.attribute("", ATTR_START_TIME, Long.toString(at.getStartTime()));
+            serializer.attribute("", ATTR_BEGIN_TIME, Long.toString(at.getBoundaryBeginTime()));
+            serializer.attribute("", ATTR_END_TIME, Long.toString(at.getBoundaryEndTime()));
+            serializer.attribute("", ATTR_VOLUME, Integer.toString(at.getVolume()));
+            serializer.attribute("", ATTR_MUTED, Boolean.toString(at.isMuted()));
+            serializer.attribute("", ATTR_LOOP, Boolean.toString(at.isLooping()));
+            if (at.getAudioWaveformFilename() != null) {
+                serializer.attribute("", ATTR_AUDIO_WAVEFORM_FILENAME,
+                at.getAudioWaveformFilename());
+            }
+
+            serializer.endTag("", TAG_AUDIO_TRACK);
+        }
+        serializer.endTag("", TAG_AUDIO_TRACKS);
+
+        serializer.endTag("", TAG_PROJECT);
+        serializer.endDocument();
+
+        // Save the metadata XML file
+        final FileOutputStream out = new FileOutputStream(new File(getPath(), PROJECT_FILENAME));
+        out.write(writer.toString().getBytes());
+        out.flush();
+        out.close();
+    }
+
+    /**
+     * Load the project form XML
+     */
+    private void load() throws FileNotFoundException, XmlPullParserException, IOException {
+        final File file = new File(mProjectPath, PROJECT_FILENAME);
+        // Load the metadata
+        final XmlPullParser parser = Xml.newPullParser();
+        parser.setInput(new FileInputStream(file), "UTF-8");
+        int eventType = parser.getEventType();
+        String name;
+        MediaItem currentMediaItem = null;
+        Overlay currentOverlay = null;
+        while (eventType != XmlPullParser.END_DOCUMENT) {
+            switch (eventType) {
+                case XmlPullParser.START_TAG: {
+                    name = parser.getName();
+                    if (TAG_PROJECT.equals(name)) {
+                        mAspectRatio = Integer.parseInt(parser.getAttributeValue("",
+                                ATTR_ASPECT_RATIO));
+                    } else if (TAG_MEDIA_ITEM.equals(name)) {
+                        final String mediaItemId = parser.getAttributeValue("", ATTR_ID);
+                        final String type = parser.getAttributeValue("", ATTR_TYPE);
+                        final String filename = parser.getAttributeValue("", ATTR_FILENAME);
+                        final int renderingMode = Integer.parseInt(parser.getAttributeValue("",
+                                ATTR_RENDERING_MODE));
+
+                        if (MediaImageItem.class.getSimpleName().equals(type)) {
+                            final long durationMs = Long.parseLong(parser.getAttributeValue("",
+                                    ATTR_DURATION));
+                            currentMediaItem = new MediaImageItem(this, mediaItemId, filename,
+                                    durationMs, renderingMode);
+                        } else if (MediaVideoItem.class.getSimpleName().equals(type)) {
+                            final long beginMs = Long.parseLong(parser.getAttributeValue("",
+                                    ATTR_BEGIN_TIME));
+                            final long endMs = Long.parseLong(parser.getAttributeValue("",
+                                    ATTR_END_TIME));
+                            final int volume = Integer.parseInt(parser.getAttributeValue("",
+                                    ATTR_VOLUME));
+                            final boolean muted = Boolean.parseBoolean(parser.getAttributeValue("",
+                                    ATTR_MUTED));
+                            final String audioWaveformFilename = parser.getAttributeValue("",
+                                    ATTR_AUDIO_WAVEFORM_FILENAME);
+                            currentMediaItem = new MediaVideoItem(this, mediaItemId, filename,
+                                    renderingMode, beginMs, endMs, volume, muted,
+                                    audioWaveformFilename);
+
+                            final long beginTimeMs = Long.parseLong(parser.getAttributeValue("",
+                                    ATTR_BEGIN_TIME));
+                            final long endTimeMs = Long.parseLong(parser.getAttributeValue("",
+                                    ATTR_END_TIME));
+                            ((MediaVideoItem)currentMediaItem).setExtractBoundaries(beginTimeMs,
+                                    endTimeMs);
+
+                            final int volumePercent = Integer.parseInt(parser.getAttributeValue("",
+                                    ATTR_VOLUME));
+                            ((MediaVideoItem)currentMediaItem).setVolume(volumePercent);
+                        } else {
+                            Log.e(TAG, "Unknown media item type: " + type);
+                            currentMediaItem = null;
+                        }
+
+                        if (currentMediaItem != null) {
+                            mMediaItems.add(currentMediaItem);
+                        }
+                    } else if (TAG_TRANSITION.equals(name)) {
+                        final Transition transition = parseTransition(parser);
+                        if (transition != null) {
+                            mTransitions.add(transition);
+                        }
+                    } else if (TAG_OVERLAY.equals(name)) {
+                        if (currentMediaItem != null) {
+                            currentOverlay = parseOverlay(parser, currentMediaItem);
+                            if (currentOverlay != null) {
+                                currentMediaItem.addOverlay(currentOverlay);
+                            }
+                        }
+                    } else if (TAG_OVERLAY_USER_ATTRIBUTES.equals(name)) {
+                        if (currentOverlay != null) {
+                            final int attributesCount = parser.getAttributeCount();
+                            for (int i = 0; i < attributesCount; i++) {
+                                currentOverlay.setUserAttribute(parser.getAttributeName(i),
+                                        parser.getAttributeValue(i));
+                            }
+                        }
+                    } else if (TAG_EFFECT.equals(name)) {
+                        if (currentMediaItem != null) {
+                            final Effect effect = parseEffect(parser, currentMediaItem);
+                            if (effect != null) {
+                                currentMediaItem.addEffect(effect);
+                            }
+                        }
+                    } else if (TAG_AUDIO_TRACK.equals(name)) {
+                        final AudioTrack audioTrack = parseAudioTrack(parser);
+                        if (audioTrack != null) {
+                            addAudioTrack(audioTrack);
+                        }
+                    }
+                    break;
+                }
+
+                case XmlPullParser.END_TAG: {
+                    name = parser.getName();
+                    if (TAG_MEDIA_ITEM.equals(name)) {
+                        currentMediaItem = null;
+                    } else if (TAG_OVERLAY.equals(name)) {
+                        currentOverlay = null;
+                    }
+                    break;
+                }
+
+                default: {
+                    break;
+                }
+            }
+            eventType = parser.next();
+        }
+
+        computeTimelineDuration();
+    }
+
+    /**
+     * Parse the transition
+     *
+     * @param parser The parser
+     * @return The transition
+     */
+    private Transition parseTransition(XmlPullParser parser) {
+        final String transitionId = parser.getAttributeValue("", ATTR_ID);
+        final String type = parser.getAttributeValue("", ATTR_TYPE);
+        final long durationMs = Long.parseLong(parser.getAttributeValue("", ATTR_DURATION));
+        final int behavior = Integer.parseInt(parser.getAttributeValue("", ATTR_BEHAVIOR));
+
+        final String beforeMediaItemId = parser.getAttributeValue("", ATTR_BEFORE_MEDIA_ITEM_ID);
+        final MediaItem beforeMediaItem;
+        if (beforeMediaItemId != null) {
+            beforeMediaItem = getMediaItem(beforeMediaItemId);
+        } else {
+            beforeMediaItem = null;
+        }
+
+        final String afterMediaItemId = parser.getAttributeValue("", ATTR_AFTER_MEDIA_ITEM_ID);
+        final MediaItem afterMediaItem;
+        if (afterMediaItemId != null) {
+            afterMediaItem = getMediaItem(afterMediaItemId);
+        } else {
+            afterMediaItem = null;
+        }
+
+        final Transition transition;
+        if (TransitionStartCurtainOpening.class.getSimpleName().equals(type)) {
+            transition = new TransitionStartCurtainOpening(transitionId, beforeMediaItem,
+                    durationMs, behavior);
+        } else if (TransitionStartFadeFromBlack.class.getSimpleName().equals(type)) {
+            transition = new TransitionStartFadeFromBlack(transitionId, beforeMediaItem,
+                    durationMs, behavior);
+        } else if (TransitionAlpha.class.getSimpleName().equals(type)) {
+            final int blending = Integer.parseInt(parser.getAttributeValue("", ATTR_BLENDING));
+            final String maskFilename = parser.getAttributeValue("", ATTR_MASK);
+            final boolean invert = Boolean.getBoolean(parser.getAttributeValue("", ATTR_INVERT));
+            transition = new TransitionAlpha(transitionId, afterMediaItem, beforeMediaItem,
+                    durationMs, behavior, maskFilename, blending, invert);
+        } else if (TransitionCrossfade.class.getSimpleName().equals(type)) {
+            transition = new TransitionCrossfade(transitionId, afterMediaItem, beforeMediaItem,
+                    durationMs, behavior);
+        } else if (TransitionSliding.class.getSimpleName().equals(type)) {
+            final int direction = Integer.parseInt(parser.getAttributeValue("", ATTR_DIRECTION));
+            transition = new TransitionSliding(transitionId, afterMediaItem, beforeMediaItem,
+                    durationMs, behavior, direction);
+        } else if (TransitionFadeToBlack.class.getSimpleName().equals(type)) {
+            transition = new TransitionFadeToBlack(transitionId, afterMediaItem, beforeMediaItem,
+                    durationMs, behavior);
+        } else if (TransitionEndCurtainClosing.class.getSimpleName().equals(type)) {
+            transition = new TransitionEndCurtainClosing(transitionId, afterMediaItem, durationMs,
+                    behavior);
+        } else if (TransitionEndFadeToBlack.class.getSimpleName().equals(type)) {
+            transition = new TransitionEndFadeToBlack(transitionId, afterMediaItem, durationMs,
+                    behavior);
+        } else {
+            transition = null;
+        }
+
+        if (beforeMediaItem != null) {
+            beforeMediaItem.setBeginTransition(transition);
+        }
+
+        if (afterMediaItem != null) {
+            afterMediaItem.setEndTransition(transition);
+        }
+
+        return transition;
+    }
+
+    /**
+     * Parse the overlay
+     *
+     * @param parser The parser
+     * @param mediaItem The media item owner
+     *
+     * @return The overlay
+     */
+    private Overlay parseOverlay(XmlPullParser parser, MediaItem mediaItem) {
+        final String overlayId = parser.getAttributeValue("", ATTR_ID);
+        final String type = parser.getAttributeValue("", ATTR_TYPE);
+        final long durationMs = Long.parseLong(parser.getAttributeValue("", ATTR_DURATION));
+        final long startTimeMs = Long.parseLong(parser.getAttributeValue("", ATTR_BEGIN_TIME));
+
+        final Overlay overlay;
+        if (OverlayFrame.class.getSimpleName().equals(type)) {
+            final String filename = parser.getAttributeValue("", ATTR_FILENAME);
+            overlay = new OverlayFrame(mediaItem, overlayId, filename, startTimeMs, durationMs);
+        } else {
+            overlay = null;
+        }
+
+        return overlay;
+    }
+
+    /**
+     * Parse the effect
+     *
+     * @param parser The parser
+     * @param mediaItem The media item owner
+     *
+     * @return The effect
+     */
+    private Effect parseEffect(XmlPullParser parser, MediaItem mediaItem) {
+        final String effectId = parser.getAttributeValue("", ATTR_ID);
+        final String type = parser.getAttributeValue("", ATTR_TYPE);
+        final long durationMs = Long.parseLong(parser.getAttributeValue("", ATTR_DURATION));
+        final long startTimeMs = Long.parseLong(parser.getAttributeValue("", ATTR_BEGIN_TIME));
+
+        final Effect effect;
+        if (EffectColor.class.getSimpleName().equals(type)) {
+            final int colorEffectType =
+                Integer.parseInt(parser.getAttributeValue("", ATTR_COLOR_EFFECT_TYPE));
+            final int color;
+            if (colorEffectType == EffectColor.TYPE_COLOR) {
+                color = Integer.parseInt(parser.getAttributeValue("", ATTR_COLOR_EFFECT_VALUE));
+            } else {
+                color = 0;
+            }
+            effect = new EffectColor(mediaItem, effectId, startTimeMs, durationMs,
+                    colorEffectType, color);
+        } else if (EffectKenBurns.class.getSimpleName().equals(type)) {
+            final Rect startRect = new Rect(
+                    Integer.parseInt(parser.getAttributeValue("", ATTR_START_RECT_L)),
+                    Integer.parseInt(parser.getAttributeValue("", ATTR_START_RECT_T)),
+                    Integer.parseInt(parser.getAttributeValue("", ATTR_START_RECT_R)),
+                    Integer.parseInt(parser.getAttributeValue("", ATTR_START_RECT_B)));
+            final Rect endRect = new Rect(
+                    Integer.parseInt(parser.getAttributeValue("", ATTR_END_RECT_L)),
+                    Integer.parseInt(parser.getAttributeValue("", ATTR_END_RECT_T)),
+                    Integer.parseInt(parser.getAttributeValue("", ATTR_END_RECT_R)),
+                    Integer.parseInt(parser.getAttributeValue("", ATTR_END_RECT_B)));
+            effect = new EffectKenBurns(mediaItem, effectId, startRect, endRect, startTimeMs,
+                    durationMs);
+        } else {
+            effect = null;
+        }
+
+        return effect;
+    }
+
+    /**
+     * Parse the audio track
+     *
+     * @param parser The parser
+     *
+     * @return The audio track
+     */
+    private AudioTrack parseAudioTrack(XmlPullParser parser) {
+        final String audioTrackId = parser.getAttributeValue("", ATTR_ID);
+        final String filename = parser.getAttributeValue("", ATTR_FILENAME);
+        final long startTimeMs = Long.parseLong(parser.getAttributeValue("", ATTR_START_TIME));
+        final long beginMs = Long.parseLong(parser.getAttributeValue("", ATTR_BEGIN_TIME));
+        final long endMs = Long.parseLong(parser.getAttributeValue("", ATTR_END_TIME));
+        final int volume = Integer.parseInt(parser.getAttributeValue("", ATTR_VOLUME));
+        final boolean muted = Boolean.parseBoolean(parser.getAttributeValue("", ATTR_MUTED));
+        final boolean loop = Boolean.parseBoolean(parser.getAttributeValue("", ATTR_LOOP));
+        final String waveformFilename = parser.getAttributeValue("", ATTR_AUDIO_WAVEFORM_FILENAME);
+        try {
+            final AudioTrack audioTrack = new AudioTrack(this, audioTrackId, filename, startTimeMs,
+                    beginMs, endMs, loop, volume, muted, waveformFilename);
+
+            return audioTrack;
+        } catch (IOException ex) {
+            return null;
+        }
+    }
+
+    public void cancelExport(String filename) {
+    }
+
+    public void export(String filename, int height, int bitrate, ExportProgressListener listener)
+            throws IOException {
+    }
+
+    /*
+     * {@inheritDoc}
+     */
+    public void generatePreview() {
+        // Generate all the needed transitions
+        for (Transition transition : mTransitions) {
+            if (!transition.isGenerated()) {
+                transition.generate();
+            }
+        }
+
+        // This is necessary because the user may had called setDuration on
+        // MediaImageItems
+        computeTimelineDuration();
+    }
+
+    /*
+     * {@inheritDoc}
+     */
+    public void release() {
+        stopPreview();
+    }
+
+    /*
+     * {@inheritDoc}
+     */
+    public long getDuration() {
+        // Since MediaImageItem can change duration we need to compute the
+        // duration here
+        computeTimelineDuration();
+        return mDurationMs;
+    }
+
+    /*
+     * {@inheritDoc}
+     */
+    public int getAspectRatio() {
+        return mAspectRatio;
+    }
+
+    /*
+     * {@inheritDoc}
+     */
+    public void setAspectRatio(int aspectRatio) {
+        mAspectRatio = aspectRatio;
+    }
+
+    /*
+     * {@inheritDoc}
+     */
+    public long renderPreviewFrame(SurfaceHolder surfaceHolder, long timeMs) {
+        if (mPreviewThread != null) {
+            throw new IllegalStateException("Previewing is in progress");
+        }
+        return timeMs;
+    }
+
+    /*
+     * {@inheritDoc}
+     */
+    public synchronized void startPreview(SurfaceHolder surfaceHolder, long fromMs, long toMs,
+            boolean loop, int callbackAfterFrameCount, PreviewProgressListener listener) {
+        if (fromMs >= mDurationMs) {
+            return;
+        }
+        mPreviewThread = new PreviewThread(fromMs, toMs, loop, callbackAfterFrameCount, listener);
+        mPreviewThread.start();
+    }
+
+    /*
+     * {@inheritDoc}
+     */
+    public synchronized long stopPreview() {
+        final long stopTimeMs;
+        if (mPreviewThread != null) {
+            stopTimeMs = mPreviewThread.stopPreview();
+            mPreviewThread = null;
+        } else {
+            stopTimeMs = 0;
+        }
+        return stopTimeMs;
+    }
+
+    /**
+     * Compute the duration
+     */
+    private void computeTimelineDuration() {
+        mDurationMs = 0;
+        for (MediaItem mediaItem : mMediaItems) {
+            mDurationMs += mediaItem.getTimelineDuration();
+        }
+
+        // Subtract the transition times
+        for (Transition transition : mTransitions) {
+            if (!(transition instanceof TransitionStartCurtainOpening)
+                    && !(transition instanceof TransitionStartFadeFromBlack)
+                    && !(transition instanceof TransitionEndFadeToBlack)
+                    && !(transition instanceof TransitionEndCurtainClosing)) {
+                mDurationMs -= transition.getDuration();
+            }
+        }
+    }
+
+    /**
+     * Remove transitions associated with the specified media item
+     *
+     * @param mediaItem The media item
+     */
+    private void removeAdjacentTransitions(MediaItem mediaItem) {
+        final Iterator<Transition> it = mTransitions.iterator();
+        while (it.hasNext()) {
+            Transition t = it.next();
+            if (t.getAfterMediaItem() == mediaItem || t.getBeforeMediaItem() == mediaItem) {
+                it.remove();
+                t.invalidate();
+                mediaItem.setBeginTransition(null);
+                mediaItem.setEndTransition(null);
+                break;
+            }
+        }
+    }
+
+    /**
+     * Remove the transition before this media item
+     *
+     * @param index The media item index
+     */
+    private void removeTransitionBefore(int index) {
+        final MediaItem mediaItem = mMediaItems.get(0);
+        final Iterator<Transition> it = mTransitions.iterator();
+        while (it.hasNext()) {
+            Transition t = it.next();
+            if (t.getBeforeMediaItem() == mediaItem) {
+                it.remove();
+                t.invalidate();
+                mediaItem.setBeginTransition(null);
+                if (index > 0) {
+                    mMediaItems.get(index - 1).setEndTransition(null);
+                }
+                break;
+            }
+        }
+    }
+
+    /**
+     * Remove the transition after this media item
+     *
+     * @param index The media item index
+     */
+    private void removeTransitionAfter(int index) {
+        final MediaItem mediaItem = mMediaItems.get(index);
+        final Iterator<Transition> it = mTransitions.iterator();
+        while (it.hasNext()) {
+            Transition t = it.next();
+            if (t.getAfterMediaItem() == mediaItem) {
+                it.remove();
+                t.invalidate();
+                mediaItem.setEndTransition(null);
+                // Invalidate the reference in the next media item
+                if (index < mMediaItems.size() - 1) {
+                    mMediaItems.get(index + 1).setBeginTransition(null);
+                }
+                break;
+            }
+        }
+    }
+}

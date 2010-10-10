@@ -1,0 +1,115 @@
+page.title=Platform Versions
+@jd:body
+
+<style type="text/css">
+
+div.dashboard-panel {
+  max-width:1000px;
+  margin:0 0 2em 0;
+  padding:20px 20px 0 20px;
+  border:1px solid #d3ecf5;
+  border-radius:7px;
+  -moz-border-radius:7px;
+  -webkit-border-radius:7px;
+  background-color: #DAF3FC;
+  box-shadow:2px 3px 1px #eee;
+  -moz-box-shadow:2px 3px 1px #eee;
+  -webkit-box-shadow:2px 3px 1px #eee;
+  overflow:hidden;
+}
+#jd-content div.dashboard-panel img {
+  margin:0 20px 20px 0;
+  padding:0;
+  border:1px solid #ccc;
+  float:left;
+}
+#jd-content div.dashboard-panel table {
+  margin:0 0 20px 0;
+  float:left;
+  background-color:#fff;
+}
+div.dashboard-panel p {
+  clear:left;
+}
+div.dashboard-panel th {
+  white-space:nowrap;
+}
+</style>
+
+<p>This page provides data about the relative number of active devices
+running a given version of the Android platform. This can help you
+understand the landscape of device distribution and decide how to prioritize
+the development of your application features for the devices currently in
+the hands of users. For information about how to target your application to devices based on
+platform version, see <a href="{@docRoot}guide/appendix/api-levels.html">API Levels</a>.</p>
+
+
+<h3 id="Current">Current Distribution</h3>
+
+<p>The following pie chart and table is based on the number of Android devices that have accessed
+Android Market within a 14-day period ending on the data collection date noted below.</p>
+
+<div class="dashboard-panel">
+
+<img alt="" height="250" width="460"
+src="http://chart.apis.google.com/chart?&cht=p&chs=460x250&chd=t:9.7,16.4,0.1,40.4,33.4&chl=
+Android%201.5|Android%201.6|Other*|Android%202.1|Android%202.2&chco=c4df9b,
+6fad0c" />
+
+<table>
+<tr>
+  <th>Platform</th>
+  <th>API Level</th>
+  <th>Distribution</th>
+</tr>
+<tr><td>Android 1.5</td><td>3</td><td>9.7%</td></tr>
+<tr><td>Android 1.6</td><td>4</td><td>16.4%</td></tr>
+<tr><td>Android 2.1</td><td>7</td><td>40.4%</td></tr>
+<tr><td>Android 2.2</td><td>8</td><td>33.4%</td></tr>
+</table>
+
+<p><em>Data collected during two weeks ending on October 1, 2010</em></p>
+<p style="font-size:.9em">* <em>Other: 0.1% of devices running obsolete versions</em></p>
+
+</div><!-- end dashboard-panel -->
+
+
+<h3 id="Historical">Historical Distribution</h3>
+
+<p>The following stacked line graph provides a history of the relative number of
+active Android devices running different versions of the Android platform. It also provides a
+valuable perspective of how many devices your application is compatible with, based on the
+platform version.</p>
+
+<p>Notice that the platform versions are stacked on top of each other with the oldest active
+version at the top. This format indicates the total percent of active devices that are compatible
+with a given version of Android. For example, if you develop your application for
+the version that is at the very top of the chart, then your application is
+compatible with 100% of active devices (and all future versions), because all Android APIs are
+forward compatible. Or, if you develop your application for a version lower on the chart,
+then it is currently compatible with the percentage of devices indicated on the y-axis, where the
+line for that version meets the y-axis on the right.</p>
+
+<p>Each dataset in the timeline is based on the number of Android devices that accessed
+Android Market within a 14-day period ending on the date indicated on the x-axis.</p>
+
+<div class="dashboard-panel">
+
+<img alt="" height="250" width="660" style="padding:5px;background:#fff"
+src="http://chart.apis.google.com/chart?cht=lc&chs=660x250&chxt=x,y,r&chxr=0,0,12|1,0,100|2,0,100&
+chxl=0:|2010/04/01|04/15|05/01|05/15|06/01|06/15|07/01|07/15|08/01|08/15|09/01|09/15|2010/10/01|1:|0
+%25|25%25|50%25|75%25|100%25|2:|0%25|25%25|50%25|75%25|100%25&chxp=0,0,1,2,3,4,5,6,7,8,9,10,11,12&
+chxtc=0,5&chd=t:99.6,99.6,99.6,99.7,100.6,101.1,99.9,100.0,100.0,99.8,99.9,100.0,100.0|61.5,61.7,62.
+3,63.5,73.0,76.4,78.6,81.1,84.5,86.6,88.0,89.3,90.3|29.4,30.2,32.7,35.3,46.2,51.3,55.1,59.0,64.1,68.
+2,70.4,72.2,73.9|4.0,28.3,32.0,34.9,45.9,51.0,54.9,58.8,64.0,68.1,70.3,72.1,73.8|0.0,0.0,0.0,0.0,0.8
+,1.2,1.8,3.3,4.3,11.3,27.8,32.1,33.4&chm=tAndroid+1.5,7caa36,0,0,15,,t::-5|b,c3df9b,0,1,0|tAndroid+1
+.6,638d23,1,0,15,,t::-5|b,b0db6e,1,2,0|tAndroid+2.0.1,496c13,2,0,15,,t::-5|b,9ddb3d,2,3,0|tAndroid+2
+.1,2f4708,3,1,15,,t:-30:-40|b,89cf19,3,4,0|tAndroid+2.2,131d02,4,9,15,,t::-5|B,6fad0c,4,5,0&chg=7,25
+&chdl=Android+1.5|Android+1.6|Android+2.0.1|Android+2.1|Android+2.2&chco=add274,9ad145,84c323,6ba213
+,507d08" />
+
+<p><em>Last historical dataset collected during two weeks ending on October 1, 2010</em></p>
+
+
+</div><!-- end dashboard-panel -->
+
