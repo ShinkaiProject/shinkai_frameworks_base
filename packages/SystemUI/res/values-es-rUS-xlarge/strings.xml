@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resources xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- XL xlarge -->
+    <string name="status_bar_clear_all_button" msgid="4341545325987974494">"Eliminar todos"</string>
+    <!-- XL -->
+    <string name="status_bar_no_notifications_title" msgid="2492933749414725897">"No tienes notificaciones"</string>
+    <!-- XL -->
+    <string name="status_bar_settings_rotation_lock" msgid="9125161825884157545">"Bloquear orient. de pant."</string>
+    <!-- XL -->
+    <string name="recent_tasks_app_label" msgid="5550538721034982973">"Google Apps"</string>
+    <!-- XL xlarge -->
+    <string name="status_bar_settings_signal_meter_disconnected" msgid="4866302415753953027">"Sin conexión a Internet"</string>
+    <!-- XL xlarge -->
+    <string name="status_bar_settings_signal_meter_wifi_nossid" msgid="3832182580451976589">"Wi-Fi conectado"</string>
+</resources>
