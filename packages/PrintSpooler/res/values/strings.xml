@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (C) 2013 The Android Open Source Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+
+    <!-- Title of the PrintSpooler application. [CHAR LIMIT=50] -->
+    <string name="app_label">Print Spooler</string>
+
+    <!-- Label of the print dialog's print button. [CHAR LIMIT=16] -->
+    <string name="print_button">Print</string>
+
+    <!-- Label of the destination widget. [CHAR LIMIT=20] -->
+    <string name="label_destination">DESTIINATION</string>
+
+    <!-- Label of the copies count widget. [CHAR LIMIT=20] -->
+    <string name="label_copies">COPIES</string>
+
+    <!-- Label of the paper size widget. [CHAR LIMIT=20] -->
+    <string name="label_paper_size">PAPER SIZE</string>
+
+    <!-- Label of the color mode widget. [CHAR LIMIT=20] -->
+    <string name="label_color">COLOR</string>
+
+    <!-- Label of the orientation widget. [CHAR LIMIT=20] -->
+    <string name="label_orientation">ORIENTATION</string>
+
+    <!-- Label of the page selection widget. [CHAR LIMIT=20] -->
+    <string name="label_pages">PAGES (<xliff:g id="page_count" example="5">%1$s</xliff:g>)</string>
+
+    <!-- Page range exmple used as a hint of how to specify such. [CHAR LIMIT=15] -->
+    <string name="pages_range_example">e.g. 1&#8211;5, 8</string>
+
+    <!-- Title for the pring preview button .[CHAR LIMIT=30] -->
+    <string name="print_preview">Print preview</string>
+
+    <!-- Title for the pring preview button if there is no PDF viewer isntalled. [CHAR LIMIT=50] -->
+    <string name="install_for_print_preview">Install PDF viewer for preview</string>
+
+    <!-- Title of the message that the printing application crashed. [CHAR LIMIT=50] -->
+    <string name="printing_app_crashed">Printing app crashed</string>
+
+    <!-- Title if the number of pages in a printed document is unknown. [CHAR LIMIT=20] -->
+    <string name="page_count_unknown">unknown</string>
+
+    <!-- Title for the temporary dialog show while an app is generating a print job. [CHAR LIMIT=30] -->
+    <string name="generating_print_job">Generating print job</string>
+
+    <!-- Notifications -->
+
+    <!-- Template for the notificaiton label for a printing print job. [CHAR LIMIT=25] -->
+    <string name="printing_notification_title_template">Printing <xliff:g id="print_job_name" example="foo.jpg">%1$s</xliff:g></string>
+
+    <!-- Template for the notificaiton label for a cancelling print job. [CHAR LIMIT=25] -->
+    <string name="cancelling_notification_title_template">Cancelling <xliff:g id="print_job_name" example="foo.jpg">%1$s</xliff:g></string>
+
+    <!-- Template for the notificaiton label for a failed print job. [CHAR LIMIT=25] -->
+    <string name="failed_notification_title_template">Printer error <xliff:g id="print_job_name" example="foo.jpg">%1$s</xliff:g></string>
+
+    <!-- Label for the notification button for cancelling a print job. [CHAR LIMIT=25] -->
+    <string name="cancel">Cancel</string>
+
+    <!-- Label for the notification button for restrating a filed print job. [CHAR LIMIT=25] -->
+    <string name="restart">Restart</string>
+
+    <!-- Message that there is no connection to a printer. [CHAR LIMIT=40] -->
+    <string name="no_connection_to_printer">No connection to printer</string>
+
+    <!-- Arrays -->
+
+    <!-- Color mode labels. -->
+    <string-array name="color_mode_labels">
+        <!-- Color modelabel: Monochrome color scheme, e.g. one color is used. [CHAR LIMIT=20] -->
+        <item>Black &amp; White</item>
+        <!-- Color mode label: Color color scheme, e.g. many colors are used. [CHAR LIMIT=20] -->
+        <item>Color</item>
+    </string-array>
+
+    <!-- Orientation labels. -->
+    <string-array name="orientation_labels">
+        <!-- Orientation label: Portrait page orientation. [CHAR LIMIT=30] -->
+        <item>Portrait</item>
+        <!-- Orientation label: Landscape page orientation [CHAR LIMIT=30] -->
+        <item>Landscape</item>
+    </string-array>
+
+    <!-- Page options labels. -->
+    <string-array name="page_options_labels">
+        <!-- Page range option label: Print all pages [CHAR LIMIT=30] -->
+        <item>All</item>
+        <!-- Page range option label: Print a page range [CHAR LIMIT=30] -->
+        <item>Range</item>
+    </string-array>
+
+    <!-- Title of an application permission, listed so the user can choose
+         whether they want to allow the application to do this. -->
+    <string name="permlab_bindPrintSpoolerService">bind to a print spooler service</string>
+    <!-- Description of an application permission, listed so the user can
+         choose whether they want to allow the application to do this. -->
+    <string name="permdesc_bindPrintSpoolerService">Allows the holder to bind to the top-level
+        interface of a print spooler service. Should never be needed for normal apps.</string>
+
+</resources>
