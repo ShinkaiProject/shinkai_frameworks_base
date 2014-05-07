@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright (C) 2011 The Android Open Source Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+
+<!--
+===============================================================
+                        PLEASE READ
+===============================================================
+This file contains the themes that are the Device Defaults.
+If you want to edit styles to skin your device, do it here.
+We recommend that you do not edit styles.xml and instead edit
+this file.
+
+Editing this file instead of styles.xml will greatly simplify
+merges for future platform versions and CTS compliance will be
+easier.
+===============================================================
+                        PLEASE READ
+===============================================================
+ -->
+<resources>
+    <!-- Widget Styles -->
+    <style name="Widget.DeviceDefault" parent="Widget.Quantum"/>
+    <style name="Widget.DeviceDefault.Button" parent="Widget.Quantum.Button"/>
+    <style name="Widget.DeviceDefault.Button.Small" parent="Widget.Quantum.Button.Small"/>
+    <style name="Widget.DeviceDefault.Button.Inset" parent="Widget.Quantum.Button.Inset"/>
+    <style name="Widget.DeviceDefault.Button.Toggle" parent="Widget.Quantum.Button.Toggle"/>
+    <style name="Widget.DeviceDefault.TextView" parent="Widget.Quantum.TextView"/>
+    <style name="Widget.DeviceDefault.CheckedTextView" parent="Widget.Quantum.CheckedTextView"/>
+    <style name="Widget.DeviceDefault.AutoCompleteTextView" parent="Widget.Quantum.AutoCompleteTextView"/>
+    <style name="Widget.DeviceDefault.CompoundButton.CheckBox" parent="Widget.Quantum.CompoundButton.CheckBox"/>
+    <style name="Widget.DeviceDefault.ListView.DropDown" parent="Widget.Quantum.ListView.DropDown"/>
+    <style name="Widget.DeviceDefault.EditText" parent="Widget.Quantum.EditText"/>
+    <style name="Widget.DeviceDefault.ExpandableListView" parent="Widget.Quantum.ExpandableListView"/>
+    <style name="Widget.DeviceDefault.GridView" parent="Widget.Quantum.GridView"/>
+    <style name="Widget.DeviceDefault.ImageButton" parent="Widget.Quantum.ImageButton"/>
+    <style name="Widget.DeviceDefault.ListView" parent="Widget.Quantum.ListView"/>
+    <style name="Widget.DeviceDefault.PopupWindow" parent="Widget.Quantum.PopupWindow"/>
+    <style name="Widget.DeviceDefault.ProgressBar" parent="Widget.Quantum.ProgressBar"/>
+    <style name="Widget.DeviceDefault.ProgressBar.Horizontal" parent="Widget.Quantum.ProgressBar.Horizontal"/>
+    <style name="Widget.DeviceDefault.ProgressBar.Small" parent="Widget.Quantum.ProgressBar.Small"/>
+    <style name="Widget.DeviceDefault.ProgressBar.Small.Title" parent="Widget.Quantum.ProgressBar.Small.Title"/>
+    <style name="Widget.DeviceDefault.ProgressBar.Large" parent="Widget.Quantum.ProgressBar.Large"/>
+    <style name="Widget.DeviceDefault.SeekBar" parent="Widget.Quantum.SeekBar"/>
+    <style name="Widget.DeviceDefault.RatingBar" parent="Widget.Quantum.RatingBar"/>
+    <style name="Widget.DeviceDefault.RatingBar.Indicator" parent="Widget.Quantum.RatingBar.Indicator"/>
+    <style name="Widget.DeviceDefault.RatingBar.Small" parent="Widget.Quantum.RatingBar.Small"/>
+    <style name="Widget.DeviceDefault.CompoundButton.RadioButton" parent="Widget.Quantum.CompoundButton.RadioButton"/>
+    <style name="Widget.DeviceDefault.ScrollView" parent="Widget.Quantum.ScrollView"/>
+    <style name="Widget.DeviceDefault.HorizontalScrollView" parent="Widget.Quantum.HorizontalScrollView"/>
+    <style name="Widget.DeviceDefault.Spinner" parent="Widget.Quantum.Spinner"/>
+    <style name="Widget.DeviceDefault.CompoundButton.Star" parent="Widget.Quantum.CompoundButton.Star"/>
+    <style name="Widget.DeviceDefault.TabWidget" parent="Widget.Quantum.TabWidget"/>
+    <style name="Widget.DeviceDefault.WebTextView" parent="Widget.Quantum.WebTextView"/>
+    <style name="Widget.DeviceDefault.WebView" parent="Widget.Quantum.WebView"/>
+    <style name="Widget.DeviceDefault.DropDownItem" parent="Widget.Quantum.DropDownItem"/>
+    <style name="Widget.DeviceDefault.DropDownItem.Spinner" parent="Widget.Quantum.DropDownItem.Spinner"/>
+    <style name="Widget.DeviceDefault.TextView.SpinnerItem" parent="Widget.Quantum.TextView.SpinnerItem"/>
+    <style name="Widget.DeviceDefault.ListPopupWindow" parent="Widget.Quantum.ListPopupWindow"/>
+    <style name="Widget.DeviceDefault.PopupMenu" parent="Widget.Quantum.PopupMenu"/>
+    <style name="Widget.DeviceDefault.ActionButton" parent="Widget.Quantum.ActionButton"/>
+    <style name="Widget.DeviceDefault.ActionButton.Overflow" parent="Widget.Quantum.ActionButton.Overflow"/>
+    <style name="Widget.DeviceDefault.ActionButton.TextButton" parent="Widget.Quantum.ActionButton"/>
+    <style name="Widget.DeviceDefault.ActionMode" parent="Widget.Quantum.ActionMode"/>
+    <style name="Widget.DeviceDefault.ActionButton.CloseMode" parent="Widget.Quantum.ActionButton.CloseMode"/>
+    <style name="Widget.DeviceDefault.ActionBar" parent="Widget.Quantum.ActionBar"/>
+    <style name="Widget.DeviceDefault.Button.Borderless" parent="Widget.Quantum.Button.Borderless"/>
+    <style name="Widget.DeviceDefault.Tab" parent="Widget.Quantum.Tab"/>
+    <style name="Widget.DeviceDefault.CalendarView" parent="Widget.Quantum.CalendarView"/>
+    <style name="Widget.DeviceDefault.DatePicker" parent="Widget.Quantum.DatePicker"/>
+    <style name="Widget.DeviceDefault.ActionBar.TabView" parent="Widget.Quantum.ActionBar.TabView"/>
+    <style name="Widget.DeviceDefault.ActionBar.TabText" parent="Widget.Quantum.ActionBar.TabText"/>
+    <style name="Widget.DeviceDefault.ActionBar.TabBar" parent="Widget.Quantum.ActionBar.TabBar"/>
+    <style name="Widget.DeviceDefault.ActionBar.Solid" parent="Widget.Quantum.ActionBar.Solid"/>
+    <style name="Widget.DeviceDefault.Button.Borderless.Small" parent="Widget.Quantum.Button.Borderless.Small"/>
+    <style name="Widget.DeviceDefault.AbsListView" parent="Widget.Quantum.AbsListView"/>
+    <style name="Widget.DeviceDefault.Spinner.DropDown.ActionBar" parent="Widget.Quantum.Spinner.DropDown.ActionBar"/>
+    <style name="Widget.DeviceDefault.PopupWindow.ActionMode" parent="Widget.Quantum.PopupWindow.ActionMode"/>
+    <style name="Widget.DeviceDefault.CompoundButton.Switch" parent="Widget.Quantum.CompoundButton.Switch"/>
+    <style name="Widget.DeviceDefault.ExpandableListView.White" parent="Widget.Quantum.ExpandableListView.White"/>
+    <style name="Widget.DeviceDefault.FastScroll" parent="Widget.Quantum.FastScroll"/>
+    <style name="Widget.DeviceDefault.FragmentBreadCrumbs" parent="Widget.Quantum.FragmentBreadCrumbs"/>
+    <style name="Widget.DeviceDefault.Gallery" parent="Widget.Quantum.Gallery"/>
+    <style name="Widget.DeviceDefault.GestureOverlayView" parent="Widget.Quantum.GestureOverlayView"/>
+    <style name="Widget.DeviceDefault.ImageWell" parent="Widget.Quantum.ImageWell"/>
+    <style name="Widget.DeviceDefault.KeyboardView" parent="Widget.Quantum.KeyboardView"/>
+    <style name="Widget.DeviceDefault.ListView.White" parent="Widget.Quantum.ListView.White"/>
+    <style name="Widget.DeviceDefault.MediaRouteButton" parent="Widget.Quantum.MediaRouteButton" />
+    <style name="Widget.DeviceDefault.NumberPicker" parent="Widget.Quantum.NumberPicker"/>
+    <style name="Widget.DeviceDefault.PreferenceFrameLayout" parent="Widget.Quantum.PreferenceFrameLayout"/>
+    <style name="Widget.DeviceDefault.ProgressBar.Inverse" parent="Widget.Quantum.ProgressBar.Inverse"/>
+    <style name="Widget.DeviceDefault.ProgressBar.Large.Inverse" parent="Widget.Quantum.ProgressBar.Large.Inverse"/>
+    <style name="Widget.DeviceDefault.ProgressBar.Small.Inverse" parent="Widget.Quantum.ProgressBar.Small.Inverse"/>
+    <style name="Widget.DeviceDefault.QuickContactBadge.WindowLarge" parent="Widget.Quantum.QuickContactBadge.WindowLarge"/>
+    <style name="Widget.DeviceDefault.QuickContactBadge.WindowMedium" parent="Widget.Quantum.QuickContactBadge.WindowMedium"/>
+    <style name="Widget.DeviceDefault.QuickContactBadge.WindowSmall" parent="Widget.Quantum.QuickContactBadge.WindowSmall"/>
+    <style name="Widget.DeviceDefault.QuickContactBadgeSmall.WindowLarge" parent="Widget.Quantum.QuickContactBadgeSmall.WindowLarge"/>
+    <style name="Widget.DeviceDefault.QuickContactBadgeSmall.WindowMedium" parent="Widget.Quantum.QuickContactBadgeSmall.WindowMedium"/>
+    <style name="Widget.DeviceDefault.QuickContactBadgeSmall.WindowSmall" parent="Widget.Quantum.QuickContactBadgeSmall.WindowSmall"/>
+    <style name="Widget.DeviceDefault.Spinner.DropDown" parent="Widget.Quantum.Spinner.DropDown"/>
+    <style name="Widget.DeviceDefault.StackView" parent="Widget.Quantum.StackView"/>
+    <style name="Widget.DeviceDefault.TextSelectHandle" parent="Widget.Quantum.TextSelectHandle"/>
+    <style name="Widget.DeviceDefault.TextSuggestionsPopupWindow" parent="Widget.Quantum.TextSuggestionsPopupWindow"/>
+    <style name="Widget.DeviceDefault.TextView.ListSeparator" parent="Widget.Quantum.TextView.ListSeparator"/>
+    <style name="Widget.DeviceDefault.TimePicker" parent="Widget.Quantum.TimePicker"/>
+
+    <style name="Widget.DeviceDefault.Light" parent="Widget.Quantum.Light"/>
+    <style name="Widget.DeviceDefault.Light.Button" parent="Widget.Quantum.Light.Button"/>
+    <style name="Widget.DeviceDefault.Light.Button.Small" parent="Widget.Quantum.Light.Button.Small"/>
+    <style name="Widget.DeviceDefault.Light.Button.Inset" parent="Widget.Quantum.Light.Button.Inset"/>
+    <style name="Widget.DeviceDefault.Light.Button.Toggle" parent="Widget.Quantum.Light.Button.Toggle"/>
+    <style name="Widget.DeviceDefault.Light.StackView" parent="Widget.Quantum.Light.StackView"/>
+    <style name="Widget.DeviceDefault.Light.TextView" parent="Widget.Quantum.Light.TextView"/>
+    <style name="Widget.DeviceDefault.Light.CheckedTextView" parent="Widget.Quantum.Light.CheckedTextView"/>
+    <style name="Widget.DeviceDefault.Light.AutoCompleteTextView" parent="Widget.Quantum.Light.AutoCompleteTextView"/>
+    <style name="Widget.DeviceDefault.Light.CompoundButton.CheckBox" parent="Widget.Quantum.Light.CompoundButton.CheckBox"/>
+    <style name="Widget.DeviceDefault.Light.ListView.DropDown" parent="Widget.Quantum.Light.ListView.DropDown"/>
+    <style name="Widget.DeviceDefault.Light.EditText" parent="Widget.Quantum.Light.EditText"/>
+    <style name="Widget.DeviceDefault.Light.ExpandableListView" parent="Widget.Quantum.Light.ExpandableListView"/>
+    <style name="Widget.DeviceDefault.Light.FastScroll" parent="Widget.Quantum.Light.FastScroll"/>
+    <style name="Widget.DeviceDefault.Light.FragmentBreadCrumbs" parent="Widget.Quantum.Light.FragmentBreadCrumbs"/>
+    <style name="Widget.DeviceDefault.Light.GridView" parent="Widget.Quantum.Light.GridView"/>
+    <style name="Widget.DeviceDefault.Light.ImageButton" parent="Widget.Quantum.Light.ImageButton"/>
+    <style name="Widget.DeviceDefault.Light.ListView" parent="Widget.Quantum.Light.ListView"/>
+    <style name="Widget.DeviceDefault.Light.MediaRouteButton" parent="Widget.Quantum.Light.MediaRouteButton" />
+    <style name="Widget.DeviceDefault.Light.PopupWindow" parent="Widget.Quantum.Light.PopupWindow"/>
+    <style name="Widget.DeviceDefault.Light.ProgressBar" parent="Widget.Quantum.Light.ProgressBar"/>
+    <style name="Widget.DeviceDefault.Light.ProgressBar.Horizontal" parent="Widget.Quantum.Light.ProgressBar.Horizontal"/>
+    <style name="Widget.DeviceDefault.Light.ProgressBar.Small" parent="Widget.Quantum.Light.ProgressBar.Small"/>
+    <style name="Widget.DeviceDefault.Light.ProgressBar.Small.Title" parent="Widget.Quantum.Light.ProgressBar.Small.Title"/>
+    <style name="Widget.DeviceDefault.Light.ProgressBar.Large" parent="Widget.Quantum.Light.ProgressBar.Large"/>
+    <style name="Widget.DeviceDefault.Light.ProgressBar.Inverse" parent="Widget.Quantum.Light.ProgressBar.Inverse"/>
+    <style name="Widget.DeviceDefault.Light.ProgressBar.Small.Inverse" parent="Widget.Quantum.Light.ProgressBar.Small.Inverse"/>
+    <style name="Widget.DeviceDefault.Light.ProgressBar.Large.Inverse" parent="Widget.Quantum.Light.ProgressBar.Large.Inverse"/>
+    <style name="Widget.DeviceDefault.Light.SeekBar" parent="Widget.Quantum.Light.SeekBar"/>
+    <style name="Widget.DeviceDefault.Light.RatingBar" parent="Widget.Quantum.Light.RatingBar"/>
+    <style name="Widget.DeviceDefault.Light.RatingBar.Indicator" parent="Widget.Quantum.Light.RatingBar.Indicator"/>
+    <style name="Widget.DeviceDefault.Light.RatingBar.Small" parent="Widget.Quantum.Light.RatingBar.Small"/>
+    <style name="Widget.DeviceDefault.Light.CompoundButton.RadioButton" parent="Widget.Quantum.Light.CompoundButton.RadioButton"/>
+    <style name="Widget.DeviceDefault.Light.ScrollView" parent="Widget.Quantum.Light.ScrollView"/>
+    <style name="Widget.DeviceDefault.Light.HorizontalScrollView" parent="Widget.Quantum.Light.HorizontalScrollView"/>
+    <style name="Widget.DeviceDefault.Light.Spinner" parent="Widget.Quantum.Light.Spinner"/>
+    <style name="Widget.DeviceDefault.Light.CompoundButton.Star" parent="Widget.Quantum.Light.CompoundButton.Star"/>
+    <style name="Widget.DeviceDefault.Light.TabWidget" parent="Widget.Quantum.Light.TabWidget"/>
+    <style name="Widget.DeviceDefault.Light.WebTextView" parent="Widget.Quantum.Light.WebTextView"/>
+    <style name="Widget.DeviceDefault.Light.WebView" parent="Widget.Quantum.Light.WebView"/>
+    <style name="Widget.DeviceDefault.Light.DropDownItem" parent="Widget.Quantum.Light.DropDownItem"/>
+    <style name="Widget.DeviceDefault.Light.DropDownItem.Spinner" parent="Widget.Quantum.Light.DropDownItem.Spinner"/>
+    <style name="Widget.DeviceDefault.Light.TextView.SpinnerItem" parent="Widget.Quantum.Light.TextView.SpinnerItem"/>
+    <style name="Widget.DeviceDefault.Light.ListPopupWindow" parent="Widget.Quantum.Light.ListPopupWindow"/>
+    <style name="Widget.DeviceDefault.Light.PopupMenu" parent="Widget.Quantum.Light.PopupMenu"/>
+    <style name="Widget.DeviceDefault.Light.Tab" parent="Widget.Quantum.Light.Tab"/>
+    <style name="Widget.DeviceDefault.Light.CalendarView" parent="Widget.Quantum.Light.CalendarView"/>
+    <style name="Widget.DeviceDefault.Light.Button.Borderless.Small" parent="Widget.Quantum.Light.Button.Borderless.Small"/>
+    <style name="Widget.DeviceDefault.Light.ActionButton" parent="Widget.Quantum.Light.ActionButton"/>
+    <style name="Widget.DeviceDefault.Light.ActionButton.Overflow" parent="Widget.Quantum.Light.ActionButton.Overflow"/>
+    <style name="Widget.DeviceDefault.Light.ActionMode" parent="Widget.Quantum.Light.ActionMode"/>
+    <style name="Widget.DeviceDefault.Light.ActionButton.CloseMode" parent="Widget.Quantum.Light.ActionButton.CloseMode"/>
+    <style name="Widget.DeviceDefault.Light.ActionBar" parent="Widget.Quantum.Light.ActionBar"/>
+    <style name="Widget.DeviceDefault.Light.ActionBar.TabView" parent="Widget.Quantum.Light.ActionBar.TabView"/>
+    <style name="Widget.DeviceDefault.Light.ActionBar.TabText" parent="Widget.Quantum.Light.ActionBar.TabText"/>
+    <style name="Widget.DeviceDefault.Light.ActionBar.TabBar" parent="Widget.Quantum.Light.ActionBar.TabBar"/>
+    <style name="Widget.DeviceDefault.Light.ActionBar.Solid" parent="Widget.Quantum.Light.ActionBar.Solid"/>
+    <!-- @deprecated Action bars are now themed using the inheritable android:theme attribute. -->
+    <style name="Widget.DeviceDefault.Light.ActionBar.Solid.Inverse" parent="Widget.Holo.Light.ActionBar.Solid.Inverse"/>
+    <!-- @deprecated Action bars are now themed using the inheritable android:theme attribute. -->
+    <style name="Widget.DeviceDefault.Light.ActionBar.TabBar.Inverse" parent="Widget.Holo.Light.ActionBar.TabBar.Inverse"/>
+    <!-- @deprecated Action bars are now themed using the inheritable android:theme attribute. -->
+    <style name="Widget.DeviceDefault.Light.ActionBar.TabView.Inverse" parent="Widget.Holo.Light.ActionBar.TabView.Inverse"/>
+    <!-- @deprecated Action bars are now themed using the inheritable android:theme attribute. -->
+    <style name="Widget.DeviceDefault.Light.ActionBar.TabText.Inverse" parent="Widget.Holo.Light.ActionBar.TabText.Inverse"/>
+    <!-- @deprecated Action bars are now themed using the inheritable android:theme attribute. -->
+    <style name="Widget.DeviceDefault.Light.ActionMode.Inverse" parent="Widget.Holo.Light.ActionMode.Inverse"/>
+    <style name="Widget.DeviceDefault.Light.AbsListView" parent="Widget.Quantum.Light.AbsListView"/>
+    <style name="Widget.DeviceDefault.Light.Spinner.DropDown.ActionBar" parent="Widget.Quantum.Light.Spinner.DropDown.ActionBar"/>
+    <style name="Widget.DeviceDefault.Light.PopupWindow.ActionMode" parent="Widget.Quantum.Light.PopupWindow.ActionMode"/>
+    <style name="Widget.DeviceDefault.Light.Button.Borderless" parent="Widget.Quantum.Light.Button.Borderless"/>
+    <style name="Widget.DeviceDefault.Light.DatePicker" parent="Widget.Quantum.Light.DatePicker"/>
+    <style name="Widget.DeviceDefault.Light.ExpandableListView.White" parent="Widget.Quantum.Light.ExpandableListView.White"/>
+    <style name="Widget.DeviceDefault.Light.Gallery" parent="Widget.Quantum.Light.Gallery"/>
+    <style name="Widget.DeviceDefault.Light.GestureOverlayView" parent="Widget.Quantum.Light.GestureOverlayView"/>
+    <style name="Widget.DeviceDefault.Light.ImageWell" parent="Widget.Quantum.Light.ImageWell"/>
+    <style name="Widget.DeviceDefault.Light.ListView.White" parent="Widget.Quantum.Light.ListView.White"/>
+    <style name="Widget.DeviceDefault.Light.NumberPicker" parent="Widget.Quantum.Light.NumberPicker"/>
+    <style name="Widget.DeviceDefault.Light.Spinner.DropDown" parent="Widget.Quantum.Light.Spinner.DropDown"/>
+    <style name="Widget.DeviceDefault.Light.TextView.ListSeparator" parent="Widget.Quantum.Light.TextView.ListSeparator"/>
+    <style name="Widget.DeviceDefault.Light.TimePicker" parent="Widget.Quantum.Light.TimePicker"/>
+    <style name="Widget.DeviceDefault.Light.TextSuggestionsPopupWindow" parent="Widget.Quantum.Light.TextSuggestionsPopupWindow"/>
+
+    <!-- Text Appearance Styles -->
+    <style name="TextAppearance.DeviceDefault" parent="TextAppearance.Quantum"/>
+    <style name="TextAppearance.DeviceDefault.Inverse" parent="TextAppearance.Quantum.Inverse"/>
+    <style name="TextAppearance.DeviceDefault.Large" parent="TextAppearance.Quantum.Large"/>
+    <style name="TextAppearance.DeviceDefault.Large.Inverse" parent="TextAppearance.Quantum.Large.Inverse"/>
+    <style name="TextAppearance.DeviceDefault.Medium" parent="TextAppearance.Quantum.Medium"/>
+    <style name="TextAppearance.DeviceDefault.Medium.Inverse" parent="TextAppearance.Quantum.Medium.Inverse"/>
+    <style name="TextAppearance.DeviceDefault.Small" parent="TextAppearance.Quantum.Small"/>
+    <style name="TextAppearance.DeviceDefault.Small.Inverse" parent="TextAppearance.Quantum.Small.Inverse"/>
+    <style name="TextAppearance.DeviceDefault.SearchResult.Title" parent="TextAppearance.Quantum.SearchResult.Title"/>
+    <style name="TextAppearance.DeviceDefault.SearchResult.Subtitle" parent="TextAppearance.Quantum.SearchResult.Subtitle"/>
+    <style name="TextAppearance.DeviceDefault.TimePicker.TimeLabel" parent="TextAppearance.Quantum.TimePicker.TimeLabel"/>
+    <style name="TextAppearance.DeviceDefault.TimePicker.AmPmLabel" parent="TextAppearance.Quantum.TimePicker.AmPmLabel"/>
+    <style name="TextAppearance.DeviceDefault.Widget" parent="TextAppearance.Quantum.Widget"/>
+    <style name="TextAppearance.DeviceDefault.Widget.Button" parent="TextAppearance.Quantum.Widget.Button"/>
+    <style name="TextAppearance.DeviceDefault.Widget.IconMenu.Item" parent="TextAppearance.Quantum.Widget.IconMenu.Item"/>
+    <style name="TextAppearance.DeviceDefault.Widget.TabWidget" parent="TextAppearance.Quantum.Widget.TabWidget"/>
+    <style name="TextAppearance.DeviceDefault.Widget.TextView" parent="TextAppearance.Quantum.Widget.TextView"/>
+    <style name="TextAppearance.DeviceDefault.Widget.TextView.PopupMenu" parent="TextAppearance.Quantum.Widget.TextView.PopupMenu"/>
+    <style name="TextAppearance.DeviceDefault.Widget.DropDownHint" parent="TextAppearance.Quantum.Widget.DropDownHint"/>
+    <style name="TextAppearance.DeviceDefault.Widget.DropDownItem" parent="TextAppearance.Quantum.Widget.DropDownItem"/>
+    <style name="TextAppearance.DeviceDefault.Widget.TextView.SpinnerItem" parent="TextAppearance.Quantum.Widget.TextView.SpinnerItem"/>
+    <style name="TextAppearance.DeviceDefault.Widget.EditText" parent="TextAppearance.Quantum.Widget.EditText"/>
+    <style name="TextAppearance.DeviceDefault.Widget.PopupMenu" parent="TextAppearance.Quantum.Widget.PopupMenu"/>
+    <style name="TextAppearance.DeviceDefault.Widget.PopupMenu.Large" parent="TextAppearance.Quantum.Widget.PopupMenu.Large"/>
+    <style name="TextAppearance.DeviceDefault.Widget.PopupMenu.Small" parent="TextAppearance.Quantum.Widget.PopupMenu.Small"/>
+    <style name="TextAppearance.DeviceDefault.Widget.ActionBar.Title" parent="TextAppearance.Quantum.Widget.ActionBar.Title"/>
+    <style name="TextAppearance.DeviceDefault.Widget.ActionBar.Subtitle" parent="TextAppearance.Quantum.Widget.ActionBar.Subtitle"/>
+    <style name="TextAppearance.DeviceDefault.Widget.ActionMode.Title" parent="TextAppearance.Quantum.Widget.ActionMode.Title"/>
+    <style name="TextAppearance.DeviceDefault.Widget.ActionMode.Subtitle" parent="TextAppearance.Quantum.Widget.ActionMode.Subtitle"/>
+    <style name="TextAppearance.DeviceDefault.WindowTitle" parent="TextAppearance.Quantum.WindowTitle"/>
+    <style name="TextAppearance.DeviceDefault.DialogWindowTitle" parent="TextAppearance.Quantum.DialogWindowTitle"/>
+    <!-- @deprecated Action bars are now themed using the inheritable android:theme attribute. -->
+    <style name="TextAppearance.DeviceDefault.Widget.ActionBar.Title.Inverse" parent="TextAppearance.Quantum.Widget.ActionBar.Title.Inverse"/>
+    <!-- @deprecated Action bars are now themed using the inheritable android:theme attribute. -->
+    <style name="TextAppearance.DeviceDefault.Widget.ActionBar.Subtitle.Inverse" parent="TextAppearance.Quantum.Widget.ActionBar.Subtitle.Inverse"/>
+    <!-- @deprecated Action bars are now themed using the inheritable android:theme attribute. -->
+    <style name="TextAppearance.DeviceDefault.Widget.ActionMode.Title.Inverse" parent="TextAppearance.Quantum.Widget.ActionMode.Title.Inverse"/>
+    <!-- @deprecated Action bars are now themed using the inheritable android:theme attribute. -->
+    <style name="TextAppearance.DeviceDefault.Widget.ActionMode.Subtitle.Inverse" parent="TextAppearance.Quantum.Widget.ActionMode.Subtitle.Inverse"/>
+    <style name="TextAppearance.DeviceDefault.Widget.ActionBar.Menu" parent="TextAppearance.Quantum.Widget.ActionBar.Menu"/>
+
+    <!-- Preference Styles -->
+    <style name="Preference.DeviceDefault" parent="Preference.Quantum"/>
+    <style name="Preference.DeviceDefault.Category" parent="Preference.Quantum.Category"/>
+    <style name="Preference.DeviceDefault.CheckBoxPreference" parent="Preference.Quantum.CheckBoxPreference"/>
+    <style name="Preference.DeviceDefault.DialogPreference" parent="Preference.Quantum.DialogPreference"/>
+    <style name="Preference.DeviceDefault.DialogPreference.EditTextPreference" parent="Preference.Quantum.DialogPreference.EditTextPreference"/>
+    <style name="Preference.DeviceDefault.DialogPreference.YesNoPreference" parent="Preference.Quantum.DialogPreference.YesNoPreference"/>
+    <style name="Preference.DeviceDefault.Information" parent="Preference.Quantum.Information"/>
+    <style name="Preference.DeviceDefault.PreferenceScreen" parent="Preference.Quantum.PreferenceScreen"/>
+    <style name="Preference.DeviceDefault.RingtonePreference" parent="Preference.Quantum.RingtonePreference"/>
+    <style name="Preference.DeviceDefault.SwitchPreference" parent="Preference.Quantum.SwitchPreference"/>
+
+    <!-- AlertDialog Styles -->
+    <style name="AlertDialog.DeviceDefault" parent="AlertDialog.Quantum"/>
+    <style name="AlertDialog.DeviceDefault.Light" parent="AlertDialog.Quantum.Light"/>
+
+    <!-- Animation Styles -->
+    <style name="Animation.DeviceDefault.Activity" parent="Animation.Quantum.Activity"/>
+    <style name="Animation.DeviceDefault.Dialog" parent="Animation.Quantum.Dialog"/>
+
+    <!-- DialogWindowTitle Styles -->
+    <style name="DialogWindowTitle.DeviceDefault" parent="DialogWindowTitle.Quantum"/>
+    <style name="DialogWindowTitle.DeviceDefault.Light" parent="DialogWindowTitle.Quantum.Light"/>
+
+    <!-- WindowTitle Styles -->
+    <style name="WindowTitle.DeviceDefault" parent="WindowTitle.Quantum"/>
+    <style name="WindowTitleBackground.DeviceDefault" parent="WindowTitleBackground.Quantum"/>
+
+    <!-- Other Styles -->
+    <style name="DeviceDefault.ButtonBar" parent="Widget.Quantum.ButtonBar"/>
+    <style name="DeviceDefault.ButtonBar.AlertDialog" parent="Widget.Quantum.ButtonBar.AlertDialog"/>
+    <style name="DeviceDefault.SegmentedButton" parent="Widget.Quantum.SegmentedButton"/>
+
+    <style name="DeviceDefault.Light.ButtonBar" parent="Widget.Quantum.Light.ButtonBar"/>
+    <style name="DeviceDefault.Light.ButtonBar.AlertDialog" parent="Widget.Quantum.Light.ButtonBar.AlertDialog"/>
+    <style name="DeviceDefault.Light.SegmentedButton" parent="Widget.Quantum.Light.SegmentedButton"/>
+</resources>

@@ -1,0 +1,214 @@
+
+/*
+ * Copyright (C) 2014 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.android.onemedia;
+
+import android.media.session.SessionController;
+import android.media.session.MediaMetadata;
+import android.media.session.RouteInfo;
+import android.media.session.SessionManager;
+import android.media.session.PlaybackState;
+import android.media.session.TransportController;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.IBinder;
+import android.os.RemoteException;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
+import android.util.Log;
+
+import com.android.onemedia.playback.RequestUtils;
+
+public class PlayerController {
+    private static final String TAG = "PlayerController";
+
+    public static final int STATE_DISCONNECTED = 0;
+    public static final int STATE_CONNECTED = 1;
+
+    protected SessionController mController;
+    protected IPlayerService mBinder;
+    protected TransportController mTransportControls;
+
+    private final Intent mServiceIntent;
+    private Context mContext;
+    private Listener mListener;
+    private TransportListener mTransportListener = new TransportListener();
+    private SessionCallback mControllerCb;
+    private SessionManager mManager;
+    private Handler mHandler = new Handler();
+
+    private boolean mResumed;
+
+    public PlayerController(Context context, Intent serviceIntent) {
+        mContext = context;
+        if (serviceIntent == null) {
+            mServiceIntent = new Intent(mContext, PlayerService.class);
+        } else {
+            mServiceIntent = serviceIntent;
+        }
+        mControllerCb = new SessionCallback();
+        mManager = (SessionManager) context
+                .getSystemService(Context.MEDIA_SESSION_SERVICE);
+
+        mResumed = false;
+    }
+
+    public void setListener(Listener listener) {
+        mListener = listener;
+        Log.d(TAG, "Listener set to " + listener + " session is " + mController);
+        if (mListener != null) {
+            mHandler = new Handler();
+            mListener.onConnectionStateChange(
+                    mController == null ? STATE_DISCONNECTED : STATE_CONNECTED);
+        }
+    }
+
+    public void onResume() {
+        mResumed = true;
+        Log.d(TAG, "onResume. Binding to service with intent " + mServiceIntent.toString());
+        bindToService();
+    }
+
+    public void onPause() {
+        mResumed = false;
+        Log.d(TAG, "onPause, unbinding from service");
+        unbindFromService();
+    }
+
+    public void play() {
+        if (mTransportControls != null) {
+            mTransportControls.play();
+        }
+    }
+
+    public void pause() {
+        if (mTransportControls != null) {
+            mTransportControls.pause();
+        }
+    }
+
+    public void setContent(String source) {
+        RequestUtils.ContentBuilder bob = new RequestUtils.ContentBuilder();
+        bob.setSource(source);
+        try {
+            mBinder.sendRequest(RequestUtils.ACTION_SET_CONTENT, bob.build(), null);
+        } catch (RemoteException e) {
+            Log.d(TAG, "setContent failed, service may have died.", e);
+        }
+    }
+
+    public void setNextContent(String source) {
+        RequestUtils.ContentBuilder bob = new RequestUtils.ContentBuilder();
+        bob.setSource(source);
+        try {
+            mBinder.sendRequest(RequestUtils.ACTION_SET_NEXT_CONTENT, bob.build(), null);
+        } catch (RemoteException e) {
+            Log.d(TAG, "setNexctContent failed, service may have died.", e);
+        }
+    }
+
+    public void showRoutePicker() {
+        mController.showRoutePicker();
+    }
+
+    private void unbindFromService() {
+        mContext.unbindService(mServiceConnection);
+    }
+
+    private void bindToService() {
+        mContext.bindService(mServiceIntent, mServiceConnection, Context.BIND_AUTO_CREATE);
+    }
+
+    private ServiceConnection mServiceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            if (mController != null) {
+                mController.removeCallback(mControllerCb);
+            }
+            mBinder = null;
+            mController = null;
+            mTransportControls = null;
+            Log.d(TAG, "Disconnected from PlayerService");
+
+            if (mListener != null) {
+                mListener.onConnectionStateChange(STATE_DISCONNECTED);
+            }
+        }
+
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            mBinder = IPlayerService.Stub.asInterface(service);
+            Log.d(TAG, "service is " + service + " binder is " + mBinder);
+            try {
+                mController = SessionController.fromToken(mBinder.getSessionToken());
+            } catch (RemoteException e) {
+                Log.e(TAG, "Error getting session", e);
+                return;
+            }
+            mController.addCallback(mControllerCb, mHandler);
+            mTransportControls = mController.getTransportController();
+            if (mTransportControls != null) {
+                mTransportControls.addStateListener(mTransportListener);
+            }
+            Log.d(TAG, "Ready to use PlayerService");
+
+            if (mListener != null) {
+                mListener.onConnectionStateChange(STATE_CONNECTED);
+                if (mTransportControls != null) {
+                    mListener.onPlaybackStateChange(mTransportControls.getPlaybackState());
+                }
+            }
+        }
+    };
+
+    private class SessionCallback extends SessionController.Callback {
+        @Override
+        public void onRouteChanged(RouteInfo route) {
+            // TODO
+        }
+    }
+
+    private class TransportListener extends TransportController.TransportStateListener {
+        @Override
+        public void onPlaybackStateChanged(PlaybackState state) {
+            if (state == null) {
+                return;
+            }
+            Log.d(TAG, "Received playback state change to state " + state.getState());
+            if (mListener != null) {
+                mListener.onPlaybackStateChange(state);
+            }
+        }
+
+        @Override
+        public void onMetadataChanged(MediaMetadata metadata) {
+            if (metadata == null) {
+                return;
+            }
+            Log.d(TAG, "Received metadata change, title is "
+                    + metadata.getString(MediaMetadata.METADATA_KEY_TITLE));
+        }
+    }
+
+    public interface Listener {
+        public void onPlaybackStateChange(PlaybackState state);
+        public void onMetadataChange(MediaMetadata metadata);
+        public void onConnectionStateChange(int state);
+    }
+
+}
