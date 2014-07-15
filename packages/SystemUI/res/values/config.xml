@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+/*
+** Copyright 2009, The Android Open Source Project
+**
+** Licensed under the Apache License, Version 2.0 (the "License");
+** you may not use this file except in compliance with the License.
+** You may obtain a copy of the License at
+**
+**     http://www.apache.org/licenses/LICENSE-2.0
+**
+** Unless required by applicable law or agreed to in writing, software
+** distributed under the License is distributed on an "AS IS" BASIS,
+** WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+** See the License for the specific language governing permissions and
+** limitations under the License.
+*/
+-->
+
+<!-- These resources are around just to allow their values to be customized
+     for different hardware and product builds. -->
+<resources>
+
+    <!-- Whether we're using the tablet-optimized recents interface (we use this
+     value at runtime for some things) -->
+    <bool name="config_recents_interface_for_tablets">false</bool>
+
+    <!-- Whether recents thumbnails should stretch in both x and y to fill their
+     ImageView -->
+    <bool name="config_recents_thumbnail_image_fits_to_xy">false</bool>
+
+    <!-- Control whether status bar should distinguish HSPA data icon form UMTS
+    data icon on devices -->
+    <bool name="config_hspa_data_distinguishable">false</bool>
+
+    <!-- Component to be used as the status bar service.  Must implement the IStatusBar
+     interface.  This name is in the ComponentName flattened format (package/class)  -->
+    <string name="config_statusBarComponent" translatable="false">com.android.systemui.statusbar.phone.PhoneStatusBar</string>
+
+    <!-- Whether or not we show the number in the bar. -->
+    <bool name="config_statusBarShowNumber">false</bool>
+
+    <!-- How many icons may be shown at once in the system bar. Includes any
+         slots that may be reused for things like IME control. -->
+    <integer name="config_maxNotificationIcons">5</integer>
+
+    <!-- Show phone (voice) signal strength instead of data in mobile RSSI. -->
+    <bool name="config_showPhoneRSSIForData">false</bool>
+
+    <!-- When true, show 1/2G networks as 3G. -->
+    <bool name="config_showMin3G">false</bool>
+
+    <!-- Show rotation lock toggle in System UI-->
+    <bool name="config_showRotationLock">true</bool>
+
+    <!-- Amount of time to hold off before showing the search panel when the user presses home -->
+    <integer name="config_show_search_delay">200</integer>
+
+    <!-- Vibration duration for GlowPadView used in SearchPanelView -->
+    <integer translatable="false" name="config_vibration_duration">0</integer>
+
+    <!-- Vibration duration for GlowPadView used in SearchPanelView -->
+    <integer translatable="false" name="config_search_panel_view_vibration_duration">20</integer>
+
+    <!-- The length of the vibration when the notification pops open. -->
+    <integer name="one_finger_pop_duration_ms">10</integer>
+
+    <!-- Whether we're using the tablet-optimized recents interface (we use this
+     value at runtime for some things) -->
+    <integer name="status_bar_recents_bg_gradient_degrees">90</integer>
+
+    <!-- decay duration (from size_max -> size), in ms -->
+    <integer name="navigation_bar_deadzone_hold">333</integer>
+    <integer name="navigation_bar_deadzone_decay">333</integer>
+
+    <bool name="config_dead_zone_flash">false</bool>
+
+    <!-- Min alpha % that recent items will fade to while being dismissed -->
+    <integer name="config_recent_item_min_alpha">3</integer>
+
+    <!-- The number of columns in the QuickSettings -->
+    <integer name="quick_settings_num_columns">3</integer>
+
+    <!-- The maximum number of rows in the QuickSettings -->
+    <integer name="quick_settings_max_rows">4</integer>
+
+    <!-- The maximum number of rows in the QuickSettings when on the keyguard -->
+    <integer name="quick_settings_max_rows_keyguard">3</integer>
+
+    <!-- The number of columns that the top level tiles span in the QuickSettings -->
+    <integer name="quick_settings_user_time_settings_tile_span">1</integer>
+
+    <!-- Whether or not the RSSI tile is capitalized or not. -->
+    <bool name="quick_settings_rssi_tile_capitalization">true</bool>
+
+    <!-- Timeouts for brightness dialog to disappear -->
+    <integer name="quick_settings_brightness_dialog_short_timeout">2000</integer>
+    <integer name="quick_settings_brightness_dialog_long_timeout">4000</integer>
+
+    <integer name="blinds_pop_duration_ms">10</integer>
+
+    <!-- Should "4G" be shown instead of "LTE" when the network is NETWORK_TYPE_LTE? -->
+    <bool name="config_show4GForLTE">true</bool>
+
+    <!-- milliseconds before the heads up notification auto-dismisses. -->
+    <integer name="heads_up_notification_decay">3700</integer>
+
+    <!-- milliseconds before the heads up notification accepts touches. -->
+    <integer name="heads_up_sensitivity_delay">700</integer>
+
+    <!-- The duration in seconds to wait before the dismiss buttons are shown. -->
+    <integer name="recents_task_bar_dismiss_delay_seconds">1</integer>
+    <!-- The min animation duration for animating views that are currently visible. -->
+    <integer name="recents_filter_animate_current_views_duration">250</integer>
+    <!-- The min animation duration for animating views that are newly visible. -->
+    <integer name="recents_filter_animate_new_views_duration">250</integer>
+    <!-- The min animation duration for animating the task bar in. -->
+    <integer name="recents_animate_task_bar_enter_duration">275</integer>
+    <!-- The animation delay for animating the first task in. This should roughly be the animation
+     duration of the transition in to recents. -->
+    <integer name="recents_animate_task_bar_enter_delay">225</integer>
+    <!-- The min animation duration for animating the task bar out. -->
+    <integer name="recents_animate_task_exit_to_home_duration">225</integer>
+    <!-- The min animation duration for animating the task bar out. -->
+    <integer name="recents_animate_task_bar_exit_duration">125</integer>
+    <!-- The min animation duration for animating the task in when transitioning from home. -->
+    <integer name="recents_animate_task_enter_from_home_duration">275</integer>
+    <!-- The animation stagger to apply to each task animation when transitioning from home. -->
+    <integer name="recents_animate_task_enter_from_home_delay">10</integer>
+    <!-- The short duration when animating in/out the lock to app button. -->
+    <integer name="recents_animate_lock_to_app_button_short_duration">150</integer>
+    <!-- The long duration when animating in/out the lock to app button. -->
+    <integer name="recents_animate_lock_to_app_button_long_duration">300</integer>
+    <!-- The min animation duration for animating the nav bar scrim in. -->
+    <integer name="recents_nav_bar_scrim_enter_duration">400</integer>
+    <!-- The animation duration for animating the removal of a task view. -->
+    <integer name="recents_animate_task_view_remove_duration">250</integer>
+    <!-- The minimum alpha for the dim applied to cards that go deeper into the stack. -->
+    <integer name="recents_max_task_stack_view_dim">96</integer>
+    <!-- Transposes the recents layout in landscape. -->
+    <bool name="recents_transpose_layout_with_orientation">true</bool>
+
+    <!-- Whether to enable KeyguardService or not -->
+    <bool name="config_enableKeyguardService">true</bool>
+
+    <!-- The maximum count of notifications on Keyguard. The rest will be collapsed in an overflow
+     card. -->
+    <integer name="keyguard_max_notification_count">4</integer>
+
+    <!-- Defines the implementation of the velocity tracker to be used for the panel expansion. Can
+         be 'platform' or 'noisy' (i.e. for noisy touch screens). -->
+    <string name="velocity_tracker_impl" translatable="false">platform</string>
+
+    <!-- Set to true to enable the classic notification ticker that scrolls
+         Notification.tickerText across the status bar for what seems like an
+         eternity. -->
+    <bool name="enable_ticker">false</bool>
+
+    <!-- Set to true to enable the user switcher on the keyguard. -->
+    <bool name="config_keyguardUserSwitcher">false</bool>
+
+    <!-- Doze: should the significant motion sensor be used as a tease signal? -->
+    <bool name="doze_tease_on_significant_motion">true</bool>
+
+    <!-- Volume: time to delay dismissing the volume panel after a click is performed -->
+    <integer name="volume_panel_dismiss_delay">200</integer>
+</resources>
+
