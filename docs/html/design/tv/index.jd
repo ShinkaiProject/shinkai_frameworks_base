@@ -1,0 +1,15 @@
+page.title=Android TV
+@jd:body
+
+
+<img src="{@docRoot}design/media/android-tv.png"
+  width="460" style="float:right;margin:0 0 40px 40px" /> 
+
+
+<p>Android TV is <strong>coming soon</strong> and lets you engage your users in a new, shared environment.</p>
+
+<p>Users bring a specific set of expectations to the experience of watching TV, versus interacting
+with a phone or tablet. So find out how to get your app ready for its big-screen debut
+later this year by reading the
+<a href="{@docRoot}preview/tv/design/index.html">Android TV Design Guide</a>
+in the L Developer Preview.</p>
