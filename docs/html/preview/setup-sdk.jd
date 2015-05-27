@@ -1,0 +1,129 @@
+page.title=Set Up the Preview SDK
+page.image=images/cards/card-set-up_16-9_2x.png
+
+@jd:body
+
+
+<div id="qv-wrapper">
+  <div id="qv">
+    <h2>In this document</h2>
+      <ol>
+        <li><a href="#get-sdk">Get the Preview SDK</a></li>
+        <li><a href="#create-update">Create or Update a Project</a></li>
+        <li><a href="#setup-test">Set Up for Testing</a></li>
+      </ol>
+  </div>
+</div>
+
+<p>The Preview SDK is available from the Android SDK Manager.
+This document assumes that you are familiar with Android app development, such
+as using the Android SDK Manager and creating projects. If you are new to
+Android, see <a href="{@docRoot}training/basics/firstapp/index.html">Building Your First
+App</a> training lesson first.</a></p>
+
+<h2 id="get-sdk">Get the Preview SDK</h2>
+
+<p>To add the Android Preview SDK components to your development environment:</p>
+
+<ol>
+  <li>Start the <a href="{@docRoot}tools/help/sdk-manager.html">Android SDK Manager</a>.</li>
+  <li>In the <strong>Tools</strong> section, select the latest Android <strong>SDK Tools</strong>,
+    <strong>Platform-tools</strong>, and <strong>Build-tools</strong>.</li>
+  <li>Select everything under the <strong>Android M Developer Preview</strong> section and
+    click <strong>Install packages...</strong></li>
+  <li>Accept the Licensing Agreement for all of the packages and click
+    <strong>Install</strong>.</li>
+</ol>
+
+<p>After completing these steps, the preview components are available in your development
+  environment. </p>
+
+
+<h2 id="create-update">Create or Update a Project</h2>
+
+<p>
+  In order to use the preview APIs, you must create or update a development project to use
+  the preview components.
+</p>
+
+
+<h3 id="create">Create a new project</h3>
+
+<p>
+  We recommend using Android Studio for create a project with the preview. Follow the steps
+  described in <a href="{@docRoot}sdk/installing/create-project.html">Creating a Project</a>
+  until you arrive at the <em>Form Factors</em> screen in the project wizard. Then perform
+  the following steps to create a project configured for the preview.
+</p>
+
+<ul>
+  <li>Check <strong>Phone and Tablet</strong>.</li>
+  <li>Select <strong>API 22+: Android M (Preview)</strong> in <strong>Minimum SDK</strong>.</li>
+</ul>
+
+
+<h3 id="update">Update an existing project</h3>
+
+<p>
+  For existing projects, you must modify the project configuration to enable the preview APIs. In
+  your the development environment, open the <code>build.gradle</code> file for your module and
+  set these values as follows:
+</p>
+
+<ul>
+  <li><code>compileSdkVersion</code> is set to <code>'android-MNC'</code></li>
+  <li><code>minSdkVersion</code> is set to <code>'MNC'</code></li>
+  <li><code>targetSdkVersion</code> is set to <code>'MNC'</code></li>
+</ul>
+
+
+<h2 id="setup-test">Set Up for Testing</h2>
+
+<p>
+  Testing app with the preview requires that you have a device or virtual device configured with
+  the preview version of the platform. If you have a compatible device, you can install the preview
+  platform for testing. Otherwise, you can configure a virtual device for testing.
+</p>
+
+<h3 id="setup-device">Set up a Physical Device</h3>
+
+<p>
+  If you have a Nexus 5, Nexus 6, Nexus 9, or Nexus Player, you can install a preview
+  system image on these devices for testing your app.
+  You can set up virtual device with the preview version of the platform from within Android Studio
+  using the Android Virtual Device Manager tool.
+</p>
+
+<p class="caution">
+  <strong>Important:</strong> Installing a preview image on a device <em>removes all data from
+  it</em>, so you should backup any data before installing a preview image.
+</p>
+
+<h3 id="setupAVD">Set up a Virtual Device</h3>
+
+<p>
+  You can set up virtual device with the preview version of the platform from within Android Studio
+  using the Android Virtual Device Manager tool.
+</p>
+
+<p>To create an AVD with the AVD Manager:</p>
+
+<ol>
+  <li>Install the M Preview SDK in your development environment, as described
+      in <a href="{@docRoot}preview/setup-sdk.html">Setting Up the Preview
+      SDK.</a></li>
+  <li>Follow the steps in
+      <a href="{@docRoot}tools/devices/managing-avds.html">Managing AVDs with AVD
+      Manager</a>. Use the following settings:
+    <ul>
+      <li><strong>Device:</strong> Nexus 5, Nexus 6, Nexus 9, or Nexus Player</li>
+      <li><strong>Target:</strong>
+       Android M (Preview) - API Level M</li>
+    </ul>
+  </li>
+</ol>
+
+<p>
+  For more information about creating virtual devices for testing, see <a href=
+  "{@docRoot}tools/devices/index.html">Managing Virtual Devices</a>.
+</p>
