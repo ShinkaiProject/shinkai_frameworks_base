@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          package="com.android.mtp"
+          android:sharedUserId="android.media">
+    <uses-feature android:name="android.hardware.usb.host" />
+    <application android:label="@string/app_label">
+        <provider
+            android:name=".MtpDocumentsProvider"
+            android:authorities="com.android.mtp.documents"
+            android:grantUriPermissions="true"
+            android:exported="true"
+            android:permission="android.permission.MANAGE_DOCUMENTS"
+            android:enabled="false">
+            <intent-filter>
+                <action android:name="android.content.action.DOCUMENTS_PROVIDER" />
+            </intent-filter>
+        </provider>
+        <activity android:name=".ReceiverActivity"
+                  android:theme="@android:style/Theme.NoDisplay"
+                  android:screenOrientation="locked"
+                  android:excludeFromRecents="true"
+                  android:enabled="false">
+            <intent-filter>
+                <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />
+            </intent-filter>
+            <meta-data android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"
+                       android:resource="@xml/device_filter" />
+        </activity>
+        <service android:name=".MtpDocumentsService"></service>
+    </application>
+</manifest>
