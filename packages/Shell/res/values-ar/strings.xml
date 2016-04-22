@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--  Copyright (C) 2013 The Android Open Source Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+  
+          http://www.apache.org/licenses/LICENSE-2.0
+  
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+ -->
+
+<resources xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="app_label" msgid="3701846017049540910">"Shell"</string>
+    <string name="bugreport_in_progress_title" msgid="7409917338223386637">"جارٍ إنشاء تقرير الخطأ"</string>
+    <string name="bugreport_finished_title" msgid="2293711546892863898">"تم الحصول على تقرير الأخطاء"</string>
+    <string name="bugreport_updating_title" msgid="4423539949559634214">"إضافة تفاصيل إلى تقرير الخطأ"</string>
+    <string name="bugreport_updating_wait" msgid="3322151947853929470">"الرجاء الانتظار…"</string>
+    <string name="bugreport_finished_text" product="watch" msgid="8389172248433597683">"مرر بسرعة لليمين لمشاركة تقرير الخطأ"</string>
+    <string name="bugreport_finished_text" product="default" msgid="3559904746859400732">"المس لمشاركة تقرير الأخطاء"</string>
+    <string name="bugreport_confirm" msgid="5130698467795669780">"تحتوي تقارير الأخطاء على بيانات من ملفات سجلات النظام المتنوعة، بما في ذلك معلومات شخصية وخاصة. لا تشارك تقارير الأخطاء إلا مع التطبيقات والأشخاص الموثوق بهم."</string>
+    <string name="bugreport_confirm_repeat" msgid="4926842460688645058">"إظهار هذه الرسالة في المرة القادمة"</string>
+    <string name="bugreport_storage_title" msgid="5332488144740527109">"تقارير الأخطاء"</string>
+    <string name="bugreport_unreadable_text" msgid="586517851044535486">"تعذرت قراءة ملف تقرير الخطأ."</string>
+    <string name="bugreport_unnamed" msgid="2800582406842092709">"بدون اسم"</string>
+    <string name="bugreport_info_action" msgid="2158204228510576227">"التفاصيل"</string>
+    <string name="bugreport_screenshot_action" msgid="8677781721940614995">"لقطة شاشة"</string>
+    <string name="bugreport_screenshot_taken" msgid="7175343181767429088">"تم التقاط لقطة الشاشة بنجاح."</string>
+    <string name="bugreport_screenshot_failed" msgid="5853049140806834601">"تعذر التقاط لقطة الشاشة."</string>
+    <string name="bugreport_info_dialog_title" msgid="3113549839798564645">"تفاصيل تقرير الخطأ"</string>
+    <string name="bugreport_info_name" msgid="4414036021935139527">"اسم الملف"</string>
+    <string name="bugreport_info_title" msgid="5599558206004371052">"العنوان"</string>
+    <string name="bugreport_info_description" msgid="4117088998733546784">"وصف تفصيلي"</string>
+</resources>
