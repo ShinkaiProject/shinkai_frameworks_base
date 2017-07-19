@@ -34,6 +34,8 @@ class FakeMobileIconInteractor(override val tableLogBuffer: TableLogBuffer) : Mo
 
     override val carrierNetworkChangeActive = MutableStateFlow(false)
 
+    override val shouldShowFourgIcon = MutableStateFlow(false)
+
     override val mobileIsDefault = MutableStateFlow(true)
 
     override val isSingleCarrier = MutableStateFlow(true)
