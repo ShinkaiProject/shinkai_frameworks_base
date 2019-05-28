@@ -1,0 +1,64 @@
+{
+    "presubmit": [
+        {
+            "name": "CtsPermissionTestCases",
+            "options": [
+                {
+                    "include-filter": "android.permission.cts.BackgroundPermissionsTest"
+                },
+                {
+                    "include-filter": "android.permission.cts.SplitPermissionTest"
+                },
+                {
+                    "include-filter": "android.permission.cts.PermissionFlagsTest"
+                },
+                {
+                    "include-filter": "android.permission.cts.SharedUidPermissionsTest"
+                }
+            ]
+        },
+        {
+            "name": "CtsAppSecurityHostTestCases",
+            "options": [
+                {
+                    "include-filter": "android.appsecurity.cts.AppSecurityTests#rebootWithDuplicatePermission"
+                }
+            ]
+        },
+        {
+            "name": "CtsPermission2TestCases",
+            "options": [
+                {
+                    "include-filter": "android.permission.cts.SharedUidPermissionsTest"
+                },
+                {
+                    "include-filter": "android.permission.cts.RestrictedPermissionsTest"
+                },
+                {
+                    "include-filter": "android.permission.cts.PermissionMaxSdkVersionTest"
+                },
+                {
+                    "include-filter": "android.permission.cts.PrivappPermissionsTest"
+                }
+            ]
+        },
+        {
+            "name": "CtsStatsdHostTestCases",
+            "options": [
+                {
+                    "include-filter": "android.cts.statsd.atom.UidAtomTests#testDangerousPermissionState"
+                }
+            ]
+        }
+    ],
+    "postsubmit": [
+        {
+            "name": "CtsAppSecurityHostTestCases",
+            "options": [
+                {
+                    "include-filter": "android.appsecurity.cts.AppSecurityTests#testPermissionDiffCert"
+                }
+            ]
+        }
+    ]
+}
