@@ -1,0 +1,8 @@
+{
+  "postsubmit": [
+    {
+      "name": "FlickerTests",
+      "keywords": ["primary-device"]
+    }
+  ]
+}
