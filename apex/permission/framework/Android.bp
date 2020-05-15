@@ -1,0 +1,130 @@
+// Copyright (C) 2020 The Android Open Source Project
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+filegroup {
+    name: "framework-permission-sources",
+    srcs: [
+        "java/**/*.java",
+        "java/**/*.aidl",
+    ],
+    path: "java",
+}
+
+java_library {
+    name: "framework-permission",
+    srcs: [
+        ":framework-permission-sources",
+    ],
+    sdk_version: "module_current",
+    apex_available: [
+        "com.android.permission",
+        "test_com.android.permission",
+    ],
+    permitted_packages: [
+        "android.permission",
+        "android.app.role",
+    ],
+    hostdex: true,
+    installable: true,
+    visibility: [
+        "//frameworks/base/apex/permission:__subpackages__",
+    ],
+}
+
+stubs_defaults {
+    name: "framework-permission-stubs-defaults",
+    srcs: [ ":framework-permission-sources" ],
+    libs: [ "framework-annotations-lib" ],
+    dist: { dest: "framework-permission.txt" },
+}
+
+droidstubs {
+    name: "framework-permission-stubs-srcs-publicapi",
+    defaults: [
+        "framework-module-stubs-defaults-publicapi",
+        "framework-permission-stubs-defaults",
+    ],
+    check_api: {
+        last_released: {
+            api_file: ":framework-permission.api.public.latest",
+            removed_api_file: ":framework-permission-removed.api.public.latest",
+        },
+        api_lint: {
+            new_since: ":framework-permission.api.public.latest",
+        },
+    },
+}
+
+droidstubs {
+    name: "framework-permission-stubs-srcs-systemapi",
+    defaults: [
+        "framework-module-stubs-defaults-systemapi",
+        "framework-permission-stubs-defaults",
+    ],
+    check_api: {
+        last_released: {
+            api_file: ":framework-permission.api.system.latest",
+            removed_api_file: ":framework-permission-removed.api.system.latest",
+        },
+        api_lint: {
+            new_since: ":framework-permission.api.system.latest",
+        },
+    },
+}
+
+droidstubs {
+    name: "framework-permission-api-module_libs_api",
+    defaults: [
+        "framework-module-api-defaults-module_libs_api",
+        "framework-permission-stubs-defaults",
+    ],
+    check_api: {
+        last_released: {
+            api_file: ":framework-permission.api.module-lib.latest",
+            removed_api_file: ":framework-permission-removed.api.module-lib.latest",
+        },
+        api_lint: {
+            new_since: ":framework-permission.api.module-lib.latest",
+        },
+    },
+}
+
+droidstubs {
+    name: "framework-permission-stubs-srcs-module_libs_api",
+    defaults: [
+        "framework-module-stubs-defaults-module_libs_api",
+        "framework-permission-stubs-defaults",
+    ],
+}
+
+java_library {
+    name: "framework-permission-stubs-publicapi",
+    srcs: [ ":framework-permission-stubs-srcs-publicapi" ],
+    defaults: ["framework-module-stubs-lib-defaults-publicapi"],
+    dist: { dest: "framework-permission.jar" },
+}
+
+java_library {
+    name: "framework-permission-stubs-systemapi",
+    srcs: [ ":framework-permission-stubs-srcs-systemapi" ],
+    defaults: ["framework-module-stubs-lib-defaults-systemapi"],
+    dist: { dest: "framework-permission.jar" },
+}
+
+java_library {
+    name: "framework-permission-stubs-module_libs_api",
+    srcs: [ ":framework-permission-stubs-srcs-module_libs_api" ],
+    defaults: ["framework-module-stubs-lib-defaults-module_libs_api"],
+    dist: { dest: "framework-permission.jar" },
+}
