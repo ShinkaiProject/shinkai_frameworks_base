@@ -1,0 +1,27 @@
+filegroup {
+    name: "framework-jobscheduler-sources",
+    srcs: [
+        "java/**/*.java",
+        "java/**/*.aidl",
+    ],
+    path: "java",
+}
+
+java_library {
+    name: "framework-jobscheduler",
+    installable: false,
+    compile_dex: true,
+    sdk_version: "core_platform",
+    srcs: [
+        ":framework-jobscheduler-sources",
+    ],
+    aidl: {
+        export_include_dirs: [
+            "java",
+        ],
+    },
+    libs: [
+        "framework-minus-apex",
+        "unsupportedappusage",
+    ],
+}
