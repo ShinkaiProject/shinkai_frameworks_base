@@ -1,0 +1,20 @@
+android_test {
+    name: "mediaroutertest",
+
+    srcs: ["**/*.java"],
+
+    libs: [
+        "android.test.runner",
+        "android.test.base",
+    ],
+
+    static_libs: [
+        "android-support-test",
+        "mockito-target-minus-junit4",
+        "testng",
+        "truth-prebuilt",
+    ],
+
+    platform_apis: true,
+    certificate: "platform",
+}

@@ -1,0 +1,15 @@
+android_app {
+    name: "DynamicSystemInstallationService",
+    defaults: ["platform_app_defaults"],
+
+    srcs: ["src/**/*.java"],
+    resource_dirs: ["res"],
+
+    certificate: "platform",
+    privileged: true,
+    platform_apis: true,
+
+    optimize: {
+        enabled: false,
+    },
+}

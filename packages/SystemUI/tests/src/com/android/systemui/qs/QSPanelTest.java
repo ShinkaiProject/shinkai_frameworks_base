@@ -1,0 +1,158 @@
+/*
+ * Copyright (C) 2017 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the specific language governing
+ * permissions and limitations under the License.
+ */
+
+package com.android.systemui.qs;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import android.content.Context;
+import android.os.UserManager;
+import android.testing.AndroidTestingRunner;
+import android.testing.TestableLooper;
+import android.testing.TestableLooper.RunWithLooper;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
+
+import androidx.test.filters.SmallTest;
+
+import com.android.internal.logging.MetricsLogger;
+import com.android.internal.logging.testing.UiEventLoggerFake;
+import com.android.systemui.Dependency;
+import com.android.systemui.SysuiTestCase;
+import com.android.systemui.media.MediaHost;
+import com.android.systemui.plugins.ActivityStarter;
+import com.android.systemui.plugins.qs.QSTileView;
+import com.android.systemui.qs.customize.QSCustomizer;
+import com.android.systemui.qs.logging.QSLogger;
+import com.android.systemui.qs.tileimpl.QSTileImpl;
+import com.android.systemui.statusbar.policy.SecurityController;
+import com.android.systemui.util.animation.DisappearParameters;
+import com.android.systemui.util.animation.UniqueObjectHostView;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+
+import java.util.Collections;
+
+@RunWith(AndroidTestingRunner.class)
+@RunWithLooper
+@SmallTest
+public class QSPanelTest extends SysuiTestCase {
+
+    private MetricsLogger mMetricsLogger;
+    private TestableLooper mTestableLooper;
+    private QSPanel mQsPanel;
+    @Mock
+    private QSTileHost mHost;
+    @Mock
+    private QSCustomizer mCustomizer;
+    @Mock
+    private QSTileImpl dndTile;
+    @Mock
+    private QSTileImpl mNonTile;
+    @Mock
+    private QSPanelControllerBase.TileRecord mDndTileRecord;
+    @Mock
+    private QSLogger mQSLogger;
+    private ViewGroup mParentView;
+    @Mock
+    private QSDetail.Callback mCallback;
+    @Mock
+    private QSTileView mQSTileView;
+    @Mock
+    private MediaHost mMediaHost;
+    @Mock
+    private ActivityStarter mActivityStarter;
+    private UiEventLoggerFake mUiEventLogger;
+    private String mCachedSpecs = "";
+
+    @Before
+    public void setup() throws Exception {
+        MockitoAnnotations.initMocks(this);
+        mTestableLooper = TestableLooper.get(this);
+
+        // Dependencies for QSSecurityFooter
+        mDependency.injectTestDependency(ActivityStarter.class, mActivityStarter);
+        mDependency.injectMockDependency(SecurityController.class);
+        mDependency.injectTestDependency(Dependency.BG_LOOPER, mTestableLooper.getLooper());
+        mContext.addMockSystemService(Context.USER_SERVICE, mock(UserManager.class));
+        when(mMediaHost.getHostView()).thenReturn(new UniqueObjectHostView(getContext()));
+        when(mMediaHost.getDisappearParameters()).thenReturn(new DisappearParameters());
+        mDndTileRecord.tile = dndTile;
+        mDndTileRecord.tileView = mQSTileView;
+
+        mUiEventLogger = new UiEventLoggerFake();
+        mTestableLooper.runWithLooper(() -> {
+            mMetricsLogger = mDependency.injectMockDependency(MetricsLogger.class);
+            mQsPanel = new QSPanel(mContext, null, mQSLogger, mMediaHost, mUiEventLogger);
+            mQsPanel.onFinishInflate();
+            // Provides a parent with non-zero size for QSPanel
+            mParentView = new FrameLayout(mContext);
+            mParentView.addView(mQsPanel);
+
+            when(dndTile.getTileSpec()).thenReturn("dnd");
+            when(mHost.getTiles()).thenReturn(Collections.emptyList());
+            when(mHost.createTileView(any(), anyBoolean())).thenReturn(mQSTileView);
+
+            mQsPanel.setCustomizer(mCustomizer);
+            mQsPanel.addTile(mDndTileRecord);
+            mQsPanel.setCallback(mCallback);
+        });
+    }
+
+    @Test
+    public void testSetExpanded_Metrics() {
+        mQsPanel.setExpanded(true);
+        verify(mQSLogger).logPanelExpanded(true, mQsPanel.getDumpableTag());
+
+        mQsPanel.setExpanded(false);
+        verify(mQSLogger).logPanelExpanded(false, mQsPanel.getDumpableTag());
+    }
+
+    @Test
+    public void testOpenDetailsWithExistingTile_NoException() {
+        mTestableLooper.processAllMessages();
+        mQsPanel.openDetails(dndTile);
+        mTestableLooper.processAllMessages();
+
+        verify(mCallback).onShowingDetail(any(), anyInt(), anyInt());
+    }
+
+    @Test
+    public void setListening() {
+        mQsPanel.setListening(true, "dnd");
+        verify(mQSLogger).logAllTilesChangeListening(true, mQsPanel.getDumpableTag(), "dnd");
+
+        mQsPanel.setListening(false, "dnd");
+        verify(mQSLogger).logAllTilesChangeListening(false, mQsPanel.getDumpableTag(), "dnd");
+    }
+
+    @Test
+    public void testOpenDetailsWithNullParameter_NoException() {
+        mTestableLooper.processAllMessages();
+        mQsPanel.openDetails(null);
+        mTestableLooper.processAllMessages();
+
+        verify(mCallback, never()).onShowingDetail(any(), anyInt(), anyInt());
+    }
+}

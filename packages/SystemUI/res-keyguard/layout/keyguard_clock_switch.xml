@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+**
+** Copyright 2018, The Android Open Source Project
+**
+** Licensed under the Apache License, Version 2.0 (the "License")
+** you may not use this file except in compliance with the License.
+** You may obtain a copy of the License at
+**
+**     http://www.apache.org/licenses/LICENSE-2.0
+**
+** Unless required by applicable law or agreed to in writing, software
+** distributed under the License is distributed on an "AS IS" BASIS,
+** WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+** See the License for the specific language governing permissions and
+** limitations under the License.
+*/
+-->
+
+<!-- This is a view that shows clock information in Keyguard. -->
+<com.android.keyguard.KeyguardClockSwitch
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/keyguard_clock_container"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center_horizontal|top">
+    <FrameLayout
+         android:id="@+id/clock_view"
+         android:layout_width="match_parent"
+         android:layout_height="wrap_content"
+         android:layout_gravity="center_horizontal"
+         android:layout_alignParentTop="true">
+        <TextClock
+             android:id="@+id/default_clock_view"
+             android:layout_width="match_parent"
+             android:layout_height="wrap_content"
+             android:layout_gravity="center_horizontal"
+             android:gravity="center_horizontal"
+             android:paddingBottom="@dimen/title_clock_padding"
+             android:letterSpacing="0.02"
+             android:textColor="?attr/wallpaperTextColor"
+             android:singleLine="true"
+             style="@style/widget_big"
+             android:format12Hour="@string/keyguard_widget_12_hours_format"
+             android:format24Hour="@string/keyguard_widget_24_hours_format"
+             android:elegantTextHeight="false"
+        />
+        <TextClock
+             android:id="@+id/default_clock_view_bold"
+             android:layout_width="match_parent"
+             android:layout_height="wrap_content"
+             android:layout_gravity="bottom|center_horizontal"
+             android:gravity="center_horizontal"
+             android:letterSpacing="0.03"
+             android:textColor="?attr/wallpaperTextColor"
+             android:singleLine="true"
+             style="@style/widget_title_bold"
+             android:format12Hour="@string/keyguard_widget_12_hours_format"
+             android:format24Hour="@string/keyguard_widget_24_hours_format"
+             android:elegantTextHeight="false"
+             android:visibility="invisible"
+             />
+    </FrameLayout>
+    <FrameLayout
+        android:id="@+id/new_lockscreen_clock_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginBottom="24dp"
+        android:visibility="gone">
+        <com.android.keyguard.GradientTextClock
+            android:id="@+id/gradient_clock_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="80dp"
+            android:letterSpacing="0.02"
+            android:lineSpacingMultiplier=".8"
+            android:includeFontPadding="false"
+            android:fontFamily="@font/clock"
+            android:typeface="monospace"
+            android:format12Hour="hh\nmm"
+            android:format24Hour="HH\nmm"
+            android:elegantTextHeight="false"
+        />
+    </FrameLayout>
+    <include layout="@layout/keyguard_status_area"
+        android:id="@+id/keyguard_status_area"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/clock_view" />
+
+    <com.android.systemui.statusbar.phone.NotificationIconContainer
+        android:id="@+id/left_aligned_notification_icon_container"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/notification_shelf_height"
+        android:layout_marginTop="@dimen/widget_vertical_padding"
+        android:layout_below="@id/keyguard_status_area"
+        android:visibility="gone"
+    />
+</com.android.keyguard.KeyguardClockSwitch>
