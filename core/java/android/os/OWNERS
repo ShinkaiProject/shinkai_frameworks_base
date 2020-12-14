@@ -1,0 +1,31 @@
+# Haptics
+per-file ExternalVibration.aidl = michaelwr@google.com
+per-file ExternalVibration.java = michaelwr@google.com
+per-file IExternalVibrationController.aidl = michaelwr@google.com
+per-file IExternalVibratorService.aidl = michaelwr@google.com
+per-file IVibratorManagerService.aidl = michaelwr@google.com
+per-file IVibratorService.aidl = michaelwr@google.com
+per-file NullVibrator.java = michaelwr@google.com
+per-file SystemVibrator.java = michaelwr@google.com
+per-file VibrationEffect.aidl = michaelwr@google.com
+per-file VibrationEffect.java = michaelwr@google.com
+per-file Vibrator.java = michaelwr@google.com
+
+# PowerManager
+per-file IPowerManager.aidl = michaelwr@google.com, santoscordon@google.com
+per-file PowerManager.java = michaelwr@google.com, santoscordon@google.com
+per-file PowerManagerInternal.java = michaelwr@google.com, santoscordon@google.com
+
+# BatteryStats
+per-file *BatteryConsumer* = file:/BATTERY_STATS_OWNERS
+per-file BatteryManager* = file:/BATTERY_STATS_OWNERS
+per-file BatteryStats* = file:/BATTERY_STATS_OWNERS
+per-file BatteryUsageStats* = file:/BATTERY_STATS_OWNERS
+per-file PowerComponents.java = file:/BATTERY_STATS_OWNERS
+
+per-file GraphicsEnvironment.java = chrisforbes@google.com, cnorthrop@google.com, lpy@google.com, timvp@google.com, zzyiwei@google.com
+
+per-file *Network* = file:/services/core/java/com/android/server/net/OWNERS
+per-file *Power* = file:/services/core/java/com/android/server/power/OWNERS
+per-file *Telephony* = file:/telephony/OWNERS
+per-file *Zygote* = file:/ZYGOTE_OWNERS

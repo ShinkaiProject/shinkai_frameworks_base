@@ -1,0 +1,15 @@
+// Copyright 2007-2008 The Android Open Source Project
+
+android_app {
+    name: "WAPPushManager",
+    defaults: ["platform_app_defaults"],
+    srcs: ["src/**/*.java"],
+    platform_apis: true,
+    libs: ["telephony-common"],
+    static_libs: ["android-common"],
+    optimize: {
+        proguard_flags_files: ["proguard.flags"],
+    },
+
+    system_ext_specific: true,
+}
