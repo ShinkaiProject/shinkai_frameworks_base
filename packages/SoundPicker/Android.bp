@@ -1,0 +1,19 @@
+android_app {
+    name: "SoundPicker",
+    defaults: ["platform_app_defaults"],
+    manifest: "AndroidManifest.xml",
+
+    static_libs: [
+        "androidx.appcompat_appcompat",
+    ],
+    resource_dirs: [
+        "res",
+    ],
+    srcs: [
+        "src/**/*.java",
+    ],
+
+    platform_apis: true,
+    certificate: "media",
+    privileged: true,
+}

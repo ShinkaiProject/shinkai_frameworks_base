@@ -1,0 +1,15 @@
+android_app {
+    name: "SimAppDialog",
+    defaults: ["platform_app_defaults"],
+
+    srcs: ["src/**/*.java"],
+
+    platform_apis: true,
+
+    static_libs: [
+        "androidx.legacy_legacy-support-v4",
+        "setup-wizard-lib",
+    ],
+
+    resource_dirs: ["res"],
+}
