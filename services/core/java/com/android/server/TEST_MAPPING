@@ -1,0 +1,40 @@
+{
+    "presubmit": [
+        {
+            "name": "CtsLocationFineTestCases"
+        },
+        {
+            "name": "CtsLocationCoarseTestCases"
+        },
+        {
+            "name": "CtsLocationNoneTestCases"
+        },
+        {
+            "name": "CtsToastTestCases",
+            "file_patterns": ["NotificationManagerService\\.java"]
+        },
+        {
+            "name": "CtsWindowManagerDeviceTestCases",
+            "options": [
+                {
+                    "include-filter": "android.server.wm.ToastWindowTest"
+                }
+            ],
+            "file_patterns": ["NotificationManagerService\\.java"]
+        }
+    ],
+    "presubmit-large": [
+        {
+            "name": "CtsScopedStorageCoreHostTest",
+            "file_patterns": ["StorageManagerService\\.java"]
+        },
+        {
+            "name": "CtsScopedStorageHostTest",
+            "file_patterns": ["StorageManagerService\\.java"]
+        },
+        {
+            "name": "CtsScopedStorageDeviceOnlyTest",
+            "file_patterns": ["StorageManagerService\\.java"]
+        }
+    ]
+}
