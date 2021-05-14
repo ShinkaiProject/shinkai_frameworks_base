@@ -1,0 +1,190 @@
+/*
+ * Copyright (C) 2020 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.settingslib.widget;
+
+import android.content.Context;
+import android.text.TextUtils;
+import android.text.method.LinkMovementMethod;
+import android.util.AttributeSet;
+import android.widget.TextView;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.StringRes;
+import androidx.preference.Preference;
+import androidx.preference.PreferenceViewHolder;
+
+/**
+ * A custom preference acting as "footer" of a page. It has a field for icon and text. It is added
+ * to screen as the last preference.
+ */
+public class FooterPreference extends Preference {
+
+    public static final String KEY_FOOTER = "footer_preference";
+    static final int ORDER_FOOTER = Integer.MAX_VALUE - 1;
+    private CharSequence mContentDescription;
+
+    public FooterPreference(Context context, AttributeSet attrs) {
+        super(context, attrs, R.attr.footerPreferenceStyle);
+        init();
+    }
+
+    public FooterPreference(Context context) {
+        this(context, null);
+    }
+
+    @Override
+    public void onBindViewHolder(PreferenceViewHolder holder) {
+        super.onBindViewHolder(holder);
+        TextView title = holder.itemView.findViewById(android.R.id.title);
+        title.setMovementMethod(new LinkMovementMethod());
+        title.setClickable(false);
+        title.setLongClickable(false);
+        title.setContentDescription(mContentDescription);
+    }
+
+    @Override
+    public void setSummary(CharSequence summary) {
+        setTitle(summary);
+    }
+
+    @Override
+    public void setSummary(int summaryResId) {
+        setTitle(summaryResId);
+    }
+
+    @Override
+    public CharSequence getSummary() {
+        return getTitle();
+    }
+
+    /**
+     * To set content description of the {@link FooterPreference}. This can use for talkback
+     * environment if developer wants to have a customization content.
+     *
+     * @param contentDescription The resource id of the content description.
+     */
+    public void setContentDescription(CharSequence contentDescription) {
+        if (!TextUtils.equals(mContentDescription, contentDescription)) {
+            mContentDescription = contentDescription;
+            notifyChanged();
+        }
+    }
+
+    /**
+     * Return the content description of footer preference.
+     */
+    public CharSequence getContentDescription() {
+        return mContentDescription;
+    }
+
+    private void init() {
+        setLayoutResource(R.layout.preference_footer);
+        if (getIcon() == null) {
+            setIcon(R.drawable.ic_info_outline_24);
+        }
+        setOrder(ORDER_FOOTER);
+        if (TextUtils.isEmpty(getKey())) {
+            setKey(KEY_FOOTER);
+        }
+    }
+
+    /**
+     * The builder is convenient to creat a dynamic FooterPreference.
+     */
+    public static class Builder {
+        private Context mContext;
+        private String mKey;
+        private CharSequence mTitle;
+        private CharSequence mContentDescription;
+
+        public Builder(@NonNull Context context) {
+            mContext = context;
+        }
+
+        /**
+         * To set the key value of the {@link FooterPreference}.
+         *
+         * @param key The key value.
+         */
+        public Builder setKey(@NonNull String key) {
+            mKey = key;
+            return this;
+        }
+
+        /**
+         * To set the title of the {@link FooterPreference}.
+         *
+         * @param title The title.
+         */
+        public Builder setTitle(CharSequence title) {
+            mTitle = title;
+            return this;
+        }
+
+        /**
+         * To set the title of the {@link FooterPreference}.
+         *
+         * @param titleResId The resource id of the title.
+         */
+        public Builder setTitle(@StringRes int titleResId) {
+            mTitle = mContext.getText(titleResId);
+            return this;
+        }
+
+        /**
+         * To set content description of the {@link FooterPreference}. This can use for talkback
+         * environment if developer wants to have a customization content.
+         *
+         * @param contentDescription The resource id of the content description.
+         */
+        public Builder setContentDescription(CharSequence contentDescription) {
+            mContentDescription = contentDescription;
+            return this;
+        }
+
+        /**
+         * To set content description of the {@link FooterPreference}. This can use for talkback
+         * environment if developer wants to have a customization content.
+         *
+         * @param contentDescriptionResId The resource id of the content description.
+         */
+        public Builder setContentDescription(@StringRes int contentDescriptionResId) {
+            mContentDescription = mContext.getText(contentDescriptionResId);
+            return this;
+        }
+
+        /**
+         * To generate the {@link FooterPreference}.
+         */
+        public FooterPreference build() {
+            final FooterPreference footerPreference = new FooterPreference(mContext);
+            footerPreference.setSelectable(false);
+            if (TextUtils.isEmpty(mTitle)) {
+                throw new IllegalArgumentException("Footer title cannot be empty!");
+            }
+            footerPreference.setTitle(mTitle);
+            if (!TextUtils.isEmpty(mKey)) {
+                footerPreference.setKey(mKey);
+            }
+
+            if (!TextUtils.isEmpty(mContentDescription)) {
+                footerPreference.setContentDescription(mContentDescription);
+            }
+            return footerPreference;
+        }
+    }
+}
