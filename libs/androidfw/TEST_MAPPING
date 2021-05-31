@@ -1,0 +1,10 @@
+{
+  "presubmit": [
+    {
+      "name": "CtsResourcesLoaderTests"
+    },
+    {
+      "name": "ResourcesHardeningTest"
+    }
+  ]
+}
