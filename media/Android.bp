@@ -1,0 +1,114 @@
+package {
+    // See: http://go/android-license-faq
+    // A large-scale-change added 'default_applicable_licenses' to import
+    // all of the 'license_kinds' from "frameworks_base_license"
+    // to get the below license kinds:
+    //   SPDX-license-identifier-Apache-2.0
+    default_applicable_licenses: ["frameworks_base_license"],
+}
+
+aidl_interface {
+    name: "media_permission-aidl",
+    unstable: true,
+    host_supported: true,
+    vendor_available: true,
+    double_loadable: true,
+    local_include_dir: "aidl",
+    srcs: [
+        "aidl/android/media/permission/Identity.aidl",
+    ],
+}
+
+aidl_interface {
+    name: "soundtrigger_middleware-aidl",
+    unstable: true,
+    local_include_dir: "aidl",
+    backend: {
+        java: {
+            sdk_version: "module_current",
+        },
+    },
+    srcs: [
+        "aidl/android/media/soundtrigger_middleware/ISoundTriggerCallback.aidl",
+        "aidl/android/media/soundtrigger_middleware/ISoundTriggerMiddlewareService.aidl",
+        "aidl/android/media/soundtrigger_middleware/ISoundTriggerModule.aidl",
+        "aidl/android/media/soundtrigger_middleware/SoundTriggerModuleDescriptor.aidl",
+    ],
+    imports: [
+        "android.media.soundtrigger.types",
+        "media_permission-aidl",
+    ],
+}
+
+aidl_interface {
+    name: "android.media.audio.common.types",
+    vendor_available: true,
+    host_supported: true,
+    double_loadable: true,
+    flags: ["-Werror", "-Weverything", ],
+    local_include_dir: "aidl",
+    srcs: [
+        "aidl/android/media/audio/common/AudioChannelMask.aidl",
+        "aidl/android/media/audio/common/AudioConfig.aidl",
+        "aidl/android/media/audio/common/AudioFormat.aidl",
+        "aidl/android/media/audio/common/AudioOffloadInfo.aidl",
+        "aidl/android/media/audio/common/AudioStreamType.aidl",
+        "aidl/android/media/audio/common/AudioUsage.aidl",
+    ],
+    stability: "vintf",
+    backend: {
+        cpp: {
+            enabled: true,
+        },
+        java: {
+            sdk_version: "module_current",
+        },
+        ndk: {
+            vndk: {
+                enabled: true,
+            },
+        },
+    },
+}
+
+aidl_interface {
+    name: "android.media.soundtrigger.types",
+    vendor_available: true,
+    flags: ["-Werror", "-Weverything", ],
+    local_include_dir: "aidl",
+    srcs: [
+        "aidl/android/media/soundtrigger/AudioCapabilities.aidl",
+        "aidl/android/media/soundtrigger/ConfidenceLevel.aidl",
+        "aidl/android/media/soundtrigger/ModelParameter.aidl",
+        "aidl/android/media/soundtrigger/ModelParameterRange.aidl",
+        "aidl/android/media/soundtrigger/Phrase.aidl",
+        "aidl/android/media/soundtrigger/PhraseRecognitionEvent.aidl",
+        "aidl/android/media/soundtrigger/PhraseRecognitionExtra.aidl",
+        "aidl/android/media/soundtrigger/PhraseSoundModel.aidl",
+        "aidl/android/media/soundtrigger/Properties.aidl",
+        "aidl/android/media/soundtrigger/RecognitionConfig.aidl",
+        "aidl/android/media/soundtrigger/RecognitionEvent.aidl",
+        "aidl/android/media/soundtrigger/RecognitionMode.aidl",
+        "aidl/android/media/soundtrigger/RecognitionStatus.aidl",
+        "aidl/android/media/soundtrigger/SoundModel.aidl",
+        "aidl/android/media/soundtrigger/SoundModelType.aidl",
+        "aidl/android/media/soundtrigger/Status.aidl",
+    ],
+    stability: "vintf",
+    backend: {
+        cpp: {
+            enabled: true,
+        },
+        java: {
+            sdk_version: "module_current",
+        },
+        ndk: {
+            vndk: {
+                enabled: true,
+            },
+        },
+    },
+    imports: [
+        "android.media.audio.common.types",
+    ],
+}
