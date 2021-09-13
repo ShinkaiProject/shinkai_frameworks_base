@@ -1,0 +1,137 @@
+/*
+ * Copyright (C) 2020 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.wm.shell.flicker
+
+import android.content.ComponentName
+import android.graphics.Region
+import android.view.Surface
+import com.android.server.wm.flicker.FlickerTestParameter
+import com.android.server.wm.flicker.helpers.WindowUtils
+
+fun FlickerTestParameter.appPairsDividerIsVisibleAtEnd() {
+    assertLayersEnd {
+        this.isVisible(APP_PAIR_SPLIT_DIVIDER_COMPONENT)
+    }
+}
+
+fun FlickerTestParameter.appPairsDividerIsInvisibleAtEnd() {
+    assertLayersEnd {
+        this.notContains(APP_PAIR_SPLIT_DIVIDER_COMPONENT)
+    }
+}
+
+fun FlickerTestParameter.appPairsDividerBecomesVisible() {
+    assertLayers {
+        this.isInvisible(DOCKED_STACK_DIVIDER_COMPONENT)
+            .then()
+            .isVisible(DOCKED_STACK_DIVIDER_COMPONENT)
+    }
+}
+
+fun FlickerTestParameter.dockedStackDividerIsVisibleAtEnd() {
+    assertLayersEnd {
+        this.isVisible(DOCKED_STACK_DIVIDER_COMPONENT)
+    }
+}
+
+fun FlickerTestParameter.dockedStackDividerBecomesVisible() {
+    assertLayers {
+        this.isInvisible(DOCKED_STACK_DIVIDER_COMPONENT)
+            .then()
+            .isVisible(DOCKED_STACK_DIVIDER_COMPONENT)
+    }
+}
+
+fun FlickerTestParameter.dockedStackDividerBecomesInvisible() {
+    assertLayers {
+        this.isVisible(DOCKED_STACK_DIVIDER_COMPONENT)
+            .then()
+            .isInvisible(DOCKED_STACK_DIVIDER_COMPONENT)
+    }
+}
+
+fun FlickerTestParameter.dockedStackDividerNotExistsAtEnd() {
+    assertLayersEnd {
+        this.notContains(DOCKED_STACK_DIVIDER_COMPONENT)
+    }
+}
+
+fun FlickerTestParameter.appPairsPrimaryBoundsIsVisibleAtEnd(
+    rotation: Int,
+    primaryComponent: ComponentName
+) {
+    assertLayersEnd {
+        val dividerRegion = layer(APP_PAIR_SPLIT_DIVIDER_COMPONENT).visibleRegion.region
+        visibleRegion(primaryComponent)
+            .coversExactly(getPrimaryRegion(dividerRegion, rotation))
+    }
+}
+
+fun FlickerTestParameter.dockedStackPrimaryBoundsIsVisibleAtEnd(
+    rotation: Int,
+    primaryComponent: ComponentName
+) {
+    assertLayersEnd {
+        val dividerRegion = layer(DOCKED_STACK_DIVIDER_COMPONENT).visibleRegion.region
+        visibleRegion(primaryComponent)
+            .coversExactly(getPrimaryRegion(dividerRegion, rotation))
+    }
+}
+
+fun FlickerTestParameter.appPairsSecondaryBoundsIsVisibleAtEnd(
+    rotation: Int,
+    secondaryComponent: ComponentName
+) {
+    assertLayersEnd {
+        val dividerRegion = layer(APP_PAIR_SPLIT_DIVIDER_COMPONENT).visibleRegion.region
+        visibleRegion(secondaryComponent)
+            .coversExactly(getSecondaryRegion(dividerRegion, rotation))
+    }
+}
+
+fun FlickerTestParameter.dockedStackSecondaryBoundsIsVisibleAtEnd(
+    rotation: Int,
+    secondaryComponent: ComponentName
+) {
+    assertLayersEnd {
+        val dividerRegion = layer(DOCKED_STACK_DIVIDER_COMPONENT).visibleRegion.region
+        visibleRegion(secondaryComponent)
+            .coversExactly(getSecondaryRegion(dividerRegion, rotation))
+    }
+}
+
+fun getPrimaryRegion(dividerRegion: Region, rotation: Int): Region {
+    val displayBounds = WindowUtils.getDisplayBounds(rotation)
+    return if (rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_180) {
+        Region(0, 0, displayBounds.bounds.right,
+            dividerRegion.bounds.top + WindowUtils.dockedStackDividerInset)
+    } else {
+        Region(0, 0, dividerRegion.bounds.left + WindowUtils.dockedStackDividerInset,
+            displayBounds.bounds.bottom)
+    }
+}
+
+fun getSecondaryRegion(dividerRegion: Region, rotation: Int): Region {
+    val displayBounds = WindowUtils.getDisplayBounds(rotation)
+    return if (rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_180) {
+        Region(0, dividerRegion.bounds.bottom - WindowUtils.dockedStackDividerInset,
+            displayBounds.bounds.right, displayBounds.bounds.bottom)
+    } else {
+        Region(dividerRegion.bounds.right - WindowUtils.dockedStackDividerInset, 0,
+            displayBounds.bounds.right, displayBounds.bounds.bottom)
+    }
+}
