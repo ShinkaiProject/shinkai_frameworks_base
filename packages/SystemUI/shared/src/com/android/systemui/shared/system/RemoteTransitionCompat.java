@@ -1,0 +1,482 @@
+/*
+ * Copyright (C) 2020 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.systemui.shared.system;
+
+import static android.app.WindowConfiguration.ACTIVITY_TYPE_HOME;
+import static android.app.WindowConfiguration.ACTIVITY_TYPE_RECENTS;
+import static android.view.WindowManager.TRANSIT_CHANGE;
+import static android.view.WindowManager.TRANSIT_CLOSE;
+import static android.view.WindowManager.TRANSIT_FLAG_KEYGUARD_LOCKED;
+import static android.view.WindowManager.TRANSIT_OPEN;
+import static android.view.WindowManager.TRANSIT_TO_BACK;
+import static android.view.WindowManager.TRANSIT_TO_FRONT;
+
+import static com.android.systemui.shared.system.RemoteAnimationTargetCompat.newTarget;
+
+import android.annotation.SuppressLint;
+import android.app.ActivityManager;
+import android.app.ActivityTaskManager;
+import android.app.IApplicationThread;
+import android.graphics.Rect;
+import android.os.IBinder;
+import android.os.RemoteException;
+import android.util.ArrayMap;
+import android.util.Log;
+import android.util.SparseArray;
+import android.view.IRecentsAnimationController;
+import android.view.RemoteAnimationTarget;
+import android.view.SurfaceControl;
+import android.window.IRemoteTransition;
+import android.window.IRemoteTransitionFinishedCallback;
+import android.window.PictureInPictureSurfaceTransaction;
+import android.window.RemoteTransition;
+import android.window.TaskSnapshot;
+import android.window.TransitionInfo;
+import android.window.WindowContainerToken;
+import android.window.WindowContainerTransaction;
+
+import com.android.internal.annotations.VisibleForTesting;
+import com.android.systemui.shared.recents.model.ThumbnailData;
+
+import java.util.ArrayList;
+
+/**
+ * Helper class to build {@link RemoteTransition} objects
+ */
+public class RemoteTransitionCompat {
+    private static final String TAG = "RemoteTransitionCompat";
+
+    /** Constructor specifically for recents animation */
+    public static RemoteTransition newRemoteTransition(RecentsAnimationListener recents,
+            RecentsAnimationControllerCompat controller, IApplicationThread appThread) {
+        IRemoteTransition remote = new IRemoteTransition.Stub() {
+            final RecentsControllerWrap mRecentsSession = new RecentsControllerWrap();
+            IBinder mToken = null;
+
+            @Override
+            public void startAnimation(IBinder transition, TransitionInfo info,
+                    SurfaceControl.Transaction t,
+                    IRemoteTransitionFinishedCallback finishedCallback) {
+                // TODO(b/177438007): Move this set-up logic into launcher's animation impl.
+                mToken = transition;
+                mRecentsSession.start(controller, recents, mToken, info, t, finishedCallback);
+            }
+
+            @Override
+            public void mergeAnimation(IBinder transition, TransitionInfo info,
+                    SurfaceControl.Transaction t, IBinder mergeTarget,
+                    IRemoteTransitionFinishedCallback finishedCallback) {
+                if (mergeTarget.equals(mToken) && mRecentsSession.merge(info, t)) {
+                    try {
+                        finishedCallback.onTransitionFinished(null /* wct */, null /* sct */);
+                    } catch (RemoteException e) {
+                        Log.e(TAG, "Error merging transition.", e);
+                    }
+                    // commit taskAppeared after merge transition finished.
+                    mRecentsSession.commitTasksAppearedIfNeeded();
+                } else {
+                    t.close();
+                    info.releaseAllSurfaces();
+                }
+            }
+        };
+        return new RemoteTransition(remote, appThread);
+    }
+
+    /**
+     * Wrapper to hook up parts of recents animation to shell transition.
+     * TODO(b/177438007): Remove this once Launcher handles shell transitions directly.
+     */
+    @VisibleForTesting
+    static class RecentsControllerWrap extends RecentsAnimationControllerCompat {
+        private RecentsAnimationListener mListener = null;
+        private RecentsAnimationControllerCompat mWrapped = null;
+        private IRemoteTransitionFinishedCallback mFinishCB = null;
+        private ArrayList<TaskState> mPausingTasks = null;
+        private WindowContainerToken mPipTask = null;
+        private WindowContainerToken mRecentsTask = null;
+        private int mRecentsTaskId = 0;
+        private TransitionInfo mInfo = null;
+        private ArrayList<SurfaceControl> mOpeningLeashes = null;
+        private boolean mOpeningSeparateHome = false;
+        private ArrayMap<SurfaceControl, SurfaceControl> mLeashMap = null;
+        private PictureInPictureSurfaceTransaction mPipTransaction = null;
+        private IBinder mTransition = null;
+        private boolean mKeyguardLocked = false;
+        private RemoteAnimationTarget[] mAppearedTargets;
+        private boolean mWillFinishToHome = false;
+
+        void start(RecentsAnimationControllerCompat wrapped, RecentsAnimationListener listener,
+                IBinder transition, TransitionInfo info, SurfaceControl.Transaction t,
+                IRemoteTransitionFinishedCallback finishedCallback) {
+            if (mInfo != null) {
+                throw new IllegalStateException("Trying to run a new recents animation while"
+                        + " recents is already active.");
+            }
+            mListener = listener;
+            mWrapped = wrapped;
+            mInfo = info;
+            mFinishCB = finishedCallback;
+            mPausingTasks = new ArrayList<>();
+            mPipTask = null;
+            mRecentsTask = null;
+            mRecentsTaskId = -1;
+            mLeashMap = new ArrayMap<>();
+            mTransition = transition;
+            mKeyguardLocked = (info.getFlags() & TRANSIT_FLAG_KEYGUARD_LOCKED) != 0;
+
+            final ArrayList<RemoteAnimationTarget> apps = new ArrayList<>();
+            final ArrayList<RemoteAnimationTarget> wallpapers = new ArrayList<>();
+            RemoteAnimationTargetCompat.LeafTaskFilter leafTaskFilter =
+                    new RemoteAnimationTargetCompat.LeafTaskFilter();
+            // About layering: we divide up the "layer space" into 3 regions (each the size of
+            // the change count). This lets us categorize things into above/below/between
+            // while maintaining their relative ordering.
+            for (int i = 0; i < info.getChanges().size(); ++i) {
+                final TransitionInfo.Change change = info.getChanges().get(i);
+                final ActivityManager.RunningTaskInfo taskInfo = change.getTaskInfo();
+                if (RemoteAnimationTargetCompat.isWallpaper(change)) {
+                    final RemoteAnimationTarget target = newTarget(change,
+                            // wallpapers go into the "below" layer space
+                            info.getChanges().size() - i, info, t, mLeashMap);
+                    wallpapers.add(target);
+                    // Make all the wallpapers opaque since we want them visible from the start
+                    t.setAlpha(target.leash, 1);
+                } else if (leafTaskFilter.test(change)) {
+                    // start by putting everything into the "below" layer space.
+                    final RemoteAnimationTarget target = newTarget(change,
+                            info.getChanges().size() - i, info, t, mLeashMap);
+                    apps.add(target);
+                    if (change.getMode() == TRANSIT_CLOSE || change.getMode() == TRANSIT_TO_BACK) {
+                        // raise closing (pausing) task to "above" layer so it isn't covered
+                        t.setLayer(target.leash, info.getChanges().size() * 3 - i);
+                        mPausingTasks.add(new TaskState(change, target.leash));
+                        if (taskInfo.pictureInPictureParams != null
+                                && taskInfo.pictureInPictureParams.isAutoEnterEnabled()) {
+                            mPipTask = taskInfo.token;
+                        }
+                    } else if (taskInfo != null
+                            && taskInfo.topActivityType == ACTIVITY_TYPE_RECENTS) {
+                        // There's a 3p launcher, so make sure recents goes above that.
+                        t.setLayer(target.leash, info.getChanges().size() * 3 - i);
+                        mRecentsTask = taskInfo.token;
+                        mRecentsTaskId = taskInfo.taskId;
+                    } else if (taskInfo != null && taskInfo.topActivityType == ACTIVITY_TYPE_HOME) {
+                        mRecentsTask = taskInfo.token;
+                        mRecentsTaskId = taskInfo.taskId;
+                    }
+                }
+            }
+            t.apply();
+            mListener.onAnimationStart(this, apps.toArray(new RemoteAnimationTarget[apps.size()]),
+                    wallpapers.toArray(new RemoteAnimationTarget[wallpapers.size()]),
+                    new Rect(0, 0, 0, 0), new Rect());
+        }
+
+        @SuppressLint("NewApi")
+        boolean merge(TransitionInfo info, SurfaceControl.Transaction t) {
+            SparseArray<TransitionInfo.Change> openingTasks = null;
+            mAppearedTargets = null;
+            boolean foundHomeOpening = false;
+            boolean foundRecentsClosing = false;
+            boolean hasChangingApp = false;
+            for (int i = info.getChanges().size() - 1; i >= 0; --i) {
+                final TransitionInfo.Change change = info.getChanges().get(i);
+                if (change.getMode() == TRANSIT_OPEN || change.getMode() == TRANSIT_TO_FRONT) {
+                    final ActivityManager.RunningTaskInfo taskInfo = change.getTaskInfo();
+                    if (taskInfo != null) {
+                        if (taskInfo.topActivityType == ACTIVITY_TYPE_HOME) {
+                            // This is usually a 3p launcher
+                            foundHomeOpening = true;
+                        }
+                        if (openingTasks == null) {
+                            openingTasks = new SparseArray<>();
+                        }
+                        if (taskInfo.hasParentTask()) {
+                            // Collects opening leaf tasks only since Launcher monitors leaf task
+                            // ids to perform recents animation.
+                            openingTasks.remove(taskInfo.parentTaskId);
+                        }
+                        openingTasks.put(taskInfo.taskId, change);
+                    }
+                } else if (change.getMode() == TRANSIT_CLOSE
+                        || change.getMode() == TRANSIT_TO_BACK) {
+                    if (mRecentsTask.equals(change.getContainer())) {
+                        foundRecentsClosing = true;
+                    }
+                } else if (change.getMode() == TRANSIT_CHANGE) {
+                    hasChangingApp = true;
+                }
+            }
+            if (hasChangingApp && foundRecentsClosing) {
+                // This happens when a visible app is expanding (usually PiP). In this case,
+                // that transition probably has a special-purpose animation, so finish recents
+                // now and let it do its animation (since recents is going to be occluded).
+                if (!mListener.onSwitchToScreenshot(
+                        () -> finish(true /* toHome */, false /* userLeaveHint */))) {
+                    Log.w(TAG, "Recents callback doesn't support support switching to screenshot"
+                            + ", there might be a flicker.");
+                    finish(true /* toHome */, false /* userLeaveHint */);
+                }
+                return false;
+            }
+            if (openingTasks == null) return false;
+            int pauseMatches = 0;
+            if (!foundHomeOpening) {
+                for (int i = 0; i < openingTasks.size(); ++i) {
+                    if (TaskState.indexOf(mPausingTasks, openingTasks.valueAt(i)) >= 0) {
+                        ++pauseMatches;
+                    }
+                }
+            }
+            if (pauseMatches > 0) {
+                if (pauseMatches != mPausingTasks.size()) {
+                    // We are not really "returning" properly... something went wrong.
+                    throw new IllegalStateException("\"Concelling\" a recents transitions by "
+                            + "unpausing " + pauseMatches + " apps after pausing "
+                            + mPausingTasks.size() + " apps.");
+                }
+                // In this case, we are "returning" to an already running app, so just consume
+                // the merge and do nothing.
+                info.releaseAllSurfaces();
+                t.close();
+                return true;
+            }
+            final int layer = mInfo.getChanges().size() * 3;
+            mOpeningLeashes = new ArrayList<>();
+            mOpeningSeparateHome = foundHomeOpening;
+            final RemoteAnimationTarget[] targets =
+                    new RemoteAnimationTarget[openingTasks.size()];
+            for (int i = 0; i < openingTasks.size(); ++i) {
+                final TransitionInfo.Change change = openingTasks.valueAt(i);
+                mOpeningLeashes.add(change.getLeash());
+                // We are receiving new opening tasks, so convert to onTasksAppeared.
+                targets[i] = newTarget(change, layer, info, t, mLeashMap);
+                t.reparent(targets[i].leash, mInfo.getRootLeash());
+                t.setLayer(targets[i].leash, layer);
+            }
+            t.apply();
+            // not using the incoming anim-only surfaces
+            info.releaseAnimSurfaces();
+            mAppearedTargets = targets;
+            return true;
+        }
+
+        private void commitTasksAppearedIfNeeded() {
+            if (mAppearedTargets != null) {
+                mListener.onTasksAppeared(mAppearedTargets);
+                mAppearedTargets = null;
+            }
+        }
+
+        @Override public ThumbnailData screenshotTask(int taskId) {
+            try {
+                final TaskSnapshot snapshot =
+                        ActivityTaskManager.getService().takeTaskSnapshot(taskId);
+                if (snapshot != null) {
+                    return new ThumbnailData(snapshot);
+                }
+            } catch (RemoteException e) {
+                Log.e(TAG, "Failed to screenshot task", e);
+            }
+            return null;
+        }
+
+        @Override public void setInputConsumerEnabled(boolean enabled) {
+            if (enabled) {
+                // transient launches don't receive focus automatically. Since we are taking over
+                // the gesture now, take focus explicitly.
+                try {
+                    ActivityTaskManager.getService().setFocusedTask(mRecentsTaskId);
+                } catch (RemoteException e) {
+                    Log.e(TAG, "Failed to set focused task", e);
+                }
+            }
+            if (mWrapped != null) mWrapped.setInputConsumerEnabled(enabled);
+        }
+
+        @Override public void setAnimationTargetsBehindSystemBars(boolean behindSystemBars) {
+            if (mWrapped != null) mWrapped.setAnimationTargetsBehindSystemBars(behindSystemBars);
+        }
+
+        @Override public void setFinishTaskTransaction(int taskId,
+                PictureInPictureSurfaceTransaction finishTransaction, SurfaceControl overlay) {
+            mPipTransaction = finishTransaction;
+            if (mWrapped != null) {
+                mWrapped.setFinishTaskTransaction(taskId, finishTransaction, overlay);
+            }
+        }
+
+        @Override
+        @SuppressLint("NewApi")
+        public void finish(boolean toHome, boolean sendUserLeaveHint) {
+            if (mFinishCB == null) {
+                Log.e(TAG, "Duplicate call to finish", new RuntimeException());
+                return;
+            }
+            if (mWrapped != null) mWrapped.finish(toHome, sendUserLeaveHint);
+            final SurfaceControl.Transaction t = new SurfaceControl.Transaction();
+            final WindowContainerTransaction wct = new WindowContainerTransaction();
+
+            if (mKeyguardLocked && mRecentsTask != null) {
+                if (toHome) wct.reorder(mRecentsTask, true /* toTop */);
+                else wct.restoreTransientOrder(mRecentsTask);
+            }
+            if (!toHome && !mWillFinishToHome && mPausingTasks != null && mOpeningLeashes == null) {
+                // The gesture went back to opening the app rather than continuing with
+                // recents, so end the transition by moving the app back to the top (and also
+                // re-showing it's task).
+                for (int i = mPausingTasks.size() - 1; i >= 0; --i) {
+                    // reverse order so that index 0 ends up on top
+                    wct.reorder(mPausingTasks.get(i).mToken, true /* onTop */);
+                    t.show(mPausingTasks.get(i).mTaskSurface);
+                }
+                if (!mKeyguardLocked && mRecentsTask != null) {
+                    wct.restoreTransientOrder(mRecentsTask);
+                }
+            } else if (toHome && mOpeningSeparateHome && mPausingTasks != null) {
+                // Special situaition where 3p launcher was changed during recents (this happens
+                // during tapltests...). Here we get both "return to home" AND "home opening".
+                // This is basically going home, but we have to restore recents order and also
+                // treat the home "pausing" task properly.
+                for (int i = mPausingTasks.size() - 1; i >= 0; --i) {
+                    final TaskState state = mPausingTasks.get(i);
+                    if (state.mTaskInfo.topActivityType == ACTIVITY_TYPE_HOME) {
+                        // Treat as opening (see above)
+                        wct.reorder(state.mToken, true /* onTop */);
+                        t.show(state.mTaskSurface);
+                    } else {
+                        // Treat as hiding (see below)
+                        t.hide(state.mTaskSurface);
+                    }
+                }
+                if (!mKeyguardLocked && mRecentsTask != null) {
+                    wct.restoreTransientOrder(mRecentsTask);
+                }
+            } else {
+                for (int i = 0; i < mPausingTasks.size(); ++i) {
+                    if (!sendUserLeaveHint) {
+                        // This means recents is not *actually* finishing, so of course we gotta
+                        // do special stuff in WMCore to accommodate.
+                        wct.setDoNotPip(mPausingTasks.get(i).mToken);
+                    }
+                    // Since we will reparent out of the leashes, pre-emptively hide the child
+                    // surface to match the leash. Otherwise, there will be a flicker before the
+                    // visibility gets committed in Core when using split-screen (in splitscreen,
+                    // the leaf-tasks are not "independent" so aren't hidden by normal setup).
+                    t.hide(mPausingTasks.get(i).mTaskSurface);
+                }
+                if (mPipTask != null && mPipTransaction != null && sendUserLeaveHint) {
+                    t.show(mInfo.getChange(mPipTask).getLeash());
+                    PictureInPictureSurfaceTransaction.apply(mPipTransaction,
+                            mInfo.getChange(mPipTask).getLeash(), t);
+                    mPipTask = null;
+                    mPipTransaction = null;
+                }
+            }
+            try {
+                mFinishCB.onTransitionFinished(wct.isEmpty() ? null : wct, t);
+            } catch (RemoteException e) {
+                Log.e("RemoteTransitionCompat", "Failed to call animation finish callback", e);
+                t.apply();
+            }
+            // Only release the non-local created surface references. The animator is responsible
+            // for releasing the leashes created by local.
+            mInfo.releaseAllSurfaces();
+            // Reset all members.
+            mWrapped = null;
+            mListener = null;
+            mFinishCB = null;
+            mPausingTasks = null;
+            mAppearedTargets = null;
+            mInfo = null;
+            mOpeningLeashes = null;
+            mOpeningSeparateHome = false;
+            mLeashMap = null;
+            mTransition = null;
+        }
+
+        @Override public void setDeferCancelUntilNextTransition(boolean defer, boolean screenshot) {
+            if (mWrapped != null) mWrapped.setDeferCancelUntilNextTransition(defer, screenshot);
+        }
+
+        @Override public void cleanupScreenshot() {
+            if (mWrapped != null) mWrapped.cleanupScreenshot();
+        }
+
+        @Override public void setWillFinishToHome(boolean willFinishToHome) {
+            mWillFinishToHome = willFinishToHome;
+            if (mWrapped != null) mWrapped.setWillFinishToHome(willFinishToHome);
+        }
+
+        /**
+         * @see IRecentsAnimationController#removeTask
+         */
+        @Override public boolean removeTask(int taskId) {
+            return mWrapped != null ? mWrapped.removeTask(taskId) : false;
+        }
+
+        /**
+         * @see IRecentsAnimationController#detachNavigationBarFromApp
+         */
+        @Override public void detachNavigationBarFromApp(boolean moveHomeToTop) {
+            try {
+                ActivityTaskManager.getService().detachNavigationBarFromApp(mTransition);
+            } catch (RemoteException e) {
+                Log.e(TAG, "Failed to detach the navigation bar from app", e);
+            }
+        }
+
+        /**
+         * @see IRecentsAnimationController#animateNavigationBarToApp(long)
+         */
+        @Override public void animateNavigationBarToApp(long duration) {
+        }
+    }
+
+    /** Utility class to track the state of a task as-seen by recents. */
+    private static class TaskState {
+        WindowContainerToken mToken;
+        ActivityManager.RunningTaskInfo mTaskInfo;
+
+        /** The surface/leash of the task provided by Core. */
+        SurfaceControl mTaskSurface;
+
+        /** The (local) animation-leash created for this task. */
+        SurfaceControl mLeash;
+
+        TaskState(TransitionInfo.Change change, SurfaceControl leash) {
+            mToken = change.getContainer();
+            mTaskInfo = change.getTaskInfo();
+            mTaskSurface = change.getLeash();
+            mLeash = leash;
+        }
+
+        static int indexOf(ArrayList<TaskState> list, TransitionInfo.Change change) {
+            for (int i = list.size() - 1; i >= 0; --i) {
+                if (list.get(i).mToken.equals(change.getContainer())) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        public String toString() {
+            return "" + mToken + " : " + mLeash;
+        }
+    }
+}

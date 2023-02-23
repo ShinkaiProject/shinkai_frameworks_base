@@ -1,0 +1,97 @@
+/*
+ * Copyright (C) 2022 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto2";
+
+package com.android.server.wm.shell;
+
+import "frameworks/base/core/proto/android/server/windowmanagerservice.proto";
+
+option java_multiple_files = true;
+
+/* Represents a file full of transition entries.
+   Encoded, it should start with 0x9 0x57 0x49 0x4e 0x54 0x52 0x41 0x43 0x45 (.TRNTRACE), such
+   that it can be easily identified. */
+message TransitionTraceProto {
+
+  /* constant; MAGIC_NUMBER = (long) MAGIC_NUMBER_H << 32 | MagicNumber.MAGIC_NUMBER_L
+     (this is needed because enums have to be 32 bits and there's no nice way to put 64bit
+      constants into .proto files. */
+  enum MagicNumber {
+    INVALID = 0;
+    MAGIC_NUMBER_L = 0x544e5254;  /* TRNT (little-endian ASCII) */
+    MAGIC_NUMBER_H = 0x45434152;  /* RACE (little-endian ASCII) */
+  }
+
+  required fixed64 magic_number = 1;  /* Must be the first field, set to value in MagicNumber */
+  repeated Transition sent_transitions = 2;
+
+  // Additional debugging info only collected and dumped when explicitly requested to trace
+  repeated TransitionState transition_states = 3;
+  repeated TransitionInfo transition_info = 4;
+}
+
+message Transition {
+  optional int32 id = 1; // Not dumped in always on tracing
+  required uint64 start_transaction_id = 2;
+  required uint64 finish_transaction_id = 3;
+  required int64 create_time_ns = 4;
+  required int64 send_time_ns = 5;
+  repeated Target targets = 6;
+}
+
+message Target {
+  required int32 mode = 1;
+  required int32 layer_id = 2;
+  optional int32 window_id = 3;  // Not dumped in always on tracing
+}
+
+message TransitionState {
+  enum State {
+    COLLECTING = 0;
+    PENDING = -1;
+    STARTED = 1;
+    PLAYING = 2;
+    ABORT = 3;
+    FINISHED = 4;
+  }
+
+  required int64 time_ns = 1;
+  required int32 transition_id = 2;
+  required int32 transition_type = 3;
+  required State state = 4;
+  required int32 flags = 5;
+  repeated ChangeInfo change = 6;
+  repeated com.android.server.wm.IdentifierProto participants = 7;
+}
+
+message ChangeInfo {
+  required com.android.server.wm.IdentifierProto window_identifier = 1;
+  required int32 transit_mode = 2;
+  required bool has_changed = 3;
+  required int32 change_flags = 4;
+  required int32 windowing_mode = 5;
+}
+
+message TransitionInfo {
+  required int32 transition_id = 1;
+  repeated TransitionInfoChange change = 2;
+}
+
+message TransitionInfoChange {
+  required int32 layer_id = 1;
+  required int32 mode = 2;
+}
