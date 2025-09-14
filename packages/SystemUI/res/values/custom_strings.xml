@@ -139,4 +139,7 @@
     <string name="quick_settings_volume_label">Volume</string>
     <string name="qs_volume_dialog_title">Volume Control</string>
     <string name="qs_volume_dialog_mute">Mute</string>
+
+    <!-- Data disabled icon -->
+    <string name="data_disabled_icon_title">Data disabled icon</string>
 </resources>
