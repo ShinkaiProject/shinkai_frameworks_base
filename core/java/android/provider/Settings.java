@@ -14099,6 +14099,20 @@ public final class Settings {
         public static final String MEDIA_SQUIGGLE_ANIMATION = "media_squiggle_animation";
 
         /**
+         * User selectable PIF data.
+         * @hide
+         */
+        @Readable
+        public static final String PIF_DATA = "pif_data";
+
+        /**
+         * PIF data fetched from our repo.
+         * @hide
+         */
+        @Readable
+        public static final String FETCHED_PIF = "fetched_pif";
+
+        /**
          * User selectable keybox data.
          * @hide
          */
