@@ -1,0 +1,12 @@
+{
+  "presubmit": [
+    {
+      "name": "FrameworksServicesTests_theme"
+    }
+  ],
+  "imports": [
+    {
+      "path": "cts/tests/tests/systemui/"
+    }
+  ]
+}

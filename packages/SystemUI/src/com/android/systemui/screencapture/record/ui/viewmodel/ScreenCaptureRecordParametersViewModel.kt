@@ -1,0 +1,128 @@
+/*
+ * Copyright (C) 2025 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.systemui.screencapture.record.ui.viewmodel
+
+import androidx.compose.runtime.getValue
+import com.android.systemui.lifecycle.HydratedActivatable
+import com.android.systemui.screencapture.record.camera.domain.interactor.ScreenRecordCameraInteractor
+import com.android.systemui.screencapture.record.domain.interactor.ScreenCaptureRecordFeaturesInteractor
+import com.android.systemui.screencapture.record.domain.interactor.ScreenCaptureRecordParametersInteractor
+import com.android.systemui.screencapture.record.smallscreen.domain.interactor.RecordDetailsTargetInteractor
+import com.android.systemui.screencapture.record.smallscreen.shared.model.currentTargetModel
+import com.android.systemui.screenrecord.ScreenRecordingAudioSource
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+
+class ScreenCaptureRecordParametersViewModel
+@AssistedInject
+constructor(
+    private val interactor: ScreenCaptureRecordParametersInteractor,
+    screenRecordCameraInteractor: ScreenRecordCameraInteractor,
+    screenCaptureRecordFeaturesInteractor: ScreenCaptureRecordFeaturesInteractor,
+    private val recordDetailsTargetInteractor: RecordDetailsTargetInteractor,
+) : HydratedActivatable() {
+
+    val audioSource: ScreenRecordingAudioSource? by
+        interactor.parameters
+            .map { it.audioSource }
+            .hydratedStateOf("ScreenCaptureAudioSourceViewModel#audioSource", null)
+
+    val shouldShowTaps: Boolean? by
+        interactor.parameters
+            .map { it.shouldShowTaps }
+            .hydratedStateOf("ScreenCaptureAudioSourceViewModel#shouldShowTaps", null)
+
+    val shouldShowFrontCamera: Boolean? by
+        interactor.parameters
+            .map { it.shouldShowFrontCamera }
+            .hydratedStateOf("ScreenCaptureAudioSourceViewModel#shouldShowFrontCamera", null)
+
+    var shouldRecordDevice: Boolean
+        get() =
+            audioSource == ScreenRecordingAudioSource.MIC_AND_INTERNAL ||
+                audioSource == ScreenRecordingAudioSource.INTERNAL
+        set(value) {
+            if (value) {
+                if (shouldRecordMicrophone) {
+                    setAudioSource(ScreenRecordingAudioSource.MIC_AND_INTERNAL)
+                } else {
+                    setAudioSource(ScreenRecordingAudioSource.INTERNAL)
+                }
+            } else {
+                if (shouldRecordMicrophone) {
+                    setAudioSource(ScreenRecordingAudioSource.MIC)
+                } else {
+                    setAudioSource(ScreenRecordingAudioSource.NONE)
+                }
+            }
+        }
+
+    var shouldRecordMicrophone: Boolean
+        get() =
+            audioSource == ScreenRecordingAudioSource.MIC_AND_INTERNAL ||
+                audioSource == ScreenRecordingAudioSource.MIC
+        set(value) {
+            if (value) {
+                if (shouldRecordDevice) {
+                    setAudioSource(ScreenRecordingAudioSource.MIC_AND_INTERNAL)
+                } else {
+                    setAudioSource(ScreenRecordingAudioSource.MIC)
+                }
+            } else {
+                if (shouldRecordDevice) {
+                    setAudioSource(ScreenRecordingAudioSource.INTERNAL)
+                } else {
+                    setAudioSource(ScreenRecordingAudioSource.NONE)
+                }
+            }
+        }
+
+    val canUseFrontCamera: Boolean by
+        if (screenCaptureRecordFeaturesInteractor.isSelfieAvailable) {
+                combine(
+                    recordDetailsTargetInteractor.model.map {
+                        it?.currentTargetModel?.canUseCamera ?: false
+                    },
+                    screenRecordCameraInteractor.isCameraSupported,
+                ) { canUseCameraForTarget, isCameraSupported ->
+                    canUseCameraForTarget && isCameraSupported
+                }
+            } else {
+                flowOf(false)
+            }
+            .hydratedStateOf("ScreenCaptureAudioSourceViewModel#canUseFrontCamera", true)
+
+    private fun setAudioSource(audioSource: ScreenRecordingAudioSource) {
+        interactor.setAudioSource(audioSource)
+    }
+
+    fun setShouldShowTaps(shouldShowTaps: Boolean) {
+        interactor.setShouldShowTaps(shouldShowTaps)
+    }
+
+    fun setShouldShowFrontCamera(shouldShowFrontCamera: Boolean) {
+        interactor.setShouldShowFrontCamera(shouldShowFrontCamera)
+    }
+
+    @AssistedFactory
+    interface Factory {
+        fun create(): ScreenCaptureRecordParametersViewModel
+    }
+}

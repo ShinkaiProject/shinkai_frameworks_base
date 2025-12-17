@@ -1,0 +1,133 @@
+/*
+ * Copyright (C) 2024 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.systemui.statusbar.data.repository
+
+import com.android.app.displaylib.PerDisplayRepository
+import com.android.systemui.CoreStartable
+import com.android.systemui.Flags
+import com.android.systemui.dagger.SysUISingleton
+import com.android.systemui.dagger.qualifiers.Background
+import com.android.systemui.dagger.qualifiers.Default
+import com.android.systemui.display.dagger.SystemUIDisplaySubcomponent
+import com.android.systemui.display.data.repository.DisplayRepository
+import com.android.systemui.display.data.repository.PerDisplayStore
+import com.android.systemui.display.data.repository.SingleDisplayStore
+import com.android.systemui.statusbar.core.StatusBarConnectedDisplays
+import com.android.systemui.statusbar.events.PrivacyDotViewController
+import com.android.systemui.statusbar.events.PrivacyDotViewControllerImpl
+import com.android.systemui.statusbar.events.SystemStatusAnimationScheduler
+import com.android.systemui.statusbar.quickactions.av.domain.interactor.AvControlsChipInteractor
+import dagger.Lazy
+import dagger.Module
+import dagger.Provides
+import dagger.multibindings.ClassKey
+import dagger.multibindings.IntoMap
+import javax.inject.Inject
+import kotlinx.coroutines.CoroutineScope
+
+/** Provides per display instances of [PrivacyDotViewController]. */
+interface PrivacyDotViewControllerStore : PerDisplayStore<PrivacyDotViewController>
+
+@SysUISingleton
+class MultiDisplayPrivacyDotViewControllerStore
+@Inject
+constructor(
+    @Background backgroundApplicationScope: CoroutineScope,
+    displayRepository: DisplayRepository,
+    private val factory: PrivacyDotViewControllerImpl.Factory,
+    private val displayScopeRepository: PerDisplayRepository<CoroutineScope>,
+    private val perDisplaySubcomponentRepo: PerDisplayRepository<SystemUIDisplaySubcomponent>,
+    @Default private val defaultStatusAnimationSchedulerLazy: Lazy<SystemStatusAnimationScheduler>,
+    private val defaultAvControlsChipInteractorLazy: Lazy<AvControlsChipInteractor>,
+) :
+    PrivacyDotViewControllerStore,
+    StatusBarPerDisplayStoreImpl<PrivacyDotViewController>(
+        backgroundApplicationScope,
+        displayRepository,
+    ) {
+
+    override fun createInstanceForDisplay(displayId: Int): PrivacyDotViewController? {
+        val displaySubcomponent = perDisplaySubcomponentRepo[displayId] ?: return null
+        val displayScope = displayScopeRepository[displayId] ?: return null
+        val animationScheduler =
+            if (Flags.systemStatusAnimationPerDisplay()) {
+                displaySubcomponent.systemStatusAnimationScheduler
+            } else {
+                defaultStatusAnimationSchedulerLazy.get()
+            }
+        val avControlsChipInteractor =
+            if (Flags.avControlsChipPerDisplay()) {
+                displaySubcomponent.avControlsChipInteractor
+            } else {
+                defaultAvControlsChipInteractorLazy.get()
+            }
+        return factory.create(
+            displayScope,
+            displaySubcomponent.statusBarConfigurationController,
+            displaySubcomponent.statusBarContentInsetsProvider,
+            displayId,
+            animationScheduler,
+            avControlsChipInteractor,
+        )
+    }
+
+    override suspend fun onDisplayRemovalAction(instance: PrivacyDotViewController) {
+        instance.stop()
+    }
+
+    override val instanceClass = PrivacyDotViewController::class.java
+}
+
+@SysUISingleton
+class SingleDisplayPrivacyDotViewControllerStore
+@Inject
+constructor(defaultController: PrivacyDotViewController) :
+    PrivacyDotViewControllerStore,
+    PerDisplayStore<PrivacyDotViewController> by SingleDisplayStore(
+        defaultInstance = defaultController
+    )
+
+@Module
+object PrivacyDotViewControllerStoreModule {
+
+    @Provides
+    @SysUISingleton
+    fun store(
+        singleDisplayLazy: Lazy<SingleDisplayPrivacyDotViewControllerStore>,
+        multiDisplayLazy: Lazy<MultiDisplayPrivacyDotViewControllerStore>,
+    ): PrivacyDotViewControllerStore {
+        return if (StatusBarConnectedDisplays.isEnabled) {
+            multiDisplayLazy.get()
+        } else {
+            singleDisplayLazy.get()
+        }
+    }
+
+    @Provides
+    @SysUISingleton
+    @IntoMap
+    @ClassKey(PrivacyDotViewControllerStore::class)
+    fun storeAsCoreStartable(
+        multiDisplayLazy: Lazy<MultiDisplayPrivacyDotViewControllerStore>
+    ): CoreStartable {
+        return if (StatusBarConnectedDisplays.isEnabled) {
+            multiDisplayLazy.get()
+        } else {
+            CoreStartable.NOP
+        }
+    }
+}

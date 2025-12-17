@@ -1,0 +1,889 @@
+/*
+ * Copyright (C) 2021 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.android.server.am;
+
+import static com.android.dx.mockito.inline.extended.ExtendedMockito.mockitoSession;
+import static com.android.dx.mockito.inline.extended.ExtendedMockito.when;
+import static com.android.internal.app.procstats.ProcessStats.ADJ_MEM_FACTOR_CRITICAL;
+import static com.android.internal.app.procstats.ProcessStats.ADJ_MEM_FACTOR_LOW;
+import static com.android.internal.app.procstats.ProcessStats.ADJ_MEM_FACTOR_MODERATE;
+import static com.android.internal.app.procstats.ProcessStats.ADJ_MEM_FACTOR_NORMAL;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
+import android.app.IApplicationThread;
+import android.app.compat.CompatChanges;
+import android.app.usage.UsageStatsManagerInternal;
+import android.content.ComponentName;
+import android.content.Intent;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManagerInternal;
+import android.content.pm.ServiceInfo;
+import android.os.Process;
+import android.os.SystemClock;
+import android.service.ondeviceintelligence.OnDeviceSandboxedInferenceService;
+import android.service.voice.HotwordDetectionService;
+import android.service.voice.VisualQueryDetectionService;
+import android.service.wearable.WearableSensingService;
+import android.util.ArraySet;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SmallTest;
+
+import com.android.server.am.psc.ProcessRecordInternal;
+import com.android.server.am.psc.ProcessStateController;
+import com.android.server.am.psc.ServiceRecordInternal;
+import com.android.server.wm.ActivityTaskManagerService;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.MockitoSession;
+import org.mockito.quality.Strictness;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+
+@SmallTest
+@RunWith(AndroidJUnit4.class)
+public final class ActiveServicesTest {
+    private static final String PACKAGE_NAME_1 = "com.foo";
+    private static final String PACKAGE_NAME_2 = "com.bar";
+    private static final String SERVICE_NAME = "barService";
+    private static final String PROCESS_NAME_1 = PACKAGE_NAME_1;
+    private static final String TRUSTED_ISOLATED_PROCESS_NAME_1 =
+            PACKAGE_NAME_1 + ":trusted_isolated";
+    private static final String ISOLATED_PROCESS_NAME_2 = PACKAGE_NAME_2 + ":isolated";
+    private static final String ISOLATED_PROCESS_INSTANCE_NAME = "pool";
+    private static final String SHARED_ISOLATED_PROCESS_NAME =
+            PACKAGE_NAME_1 + ":ishared:" + ISOLATED_PROCESS_INSTANCE_NAME;
+
+    private static final long DEFAULT_SERVICE_MIN_RESTART_TIME_BETWEEN = 10 * 1000;
+    private static final long[] DEFAULT_EXTRA_SERVICE_RESTART_DELAY_ON_MEM_PRESSURE = {
+        0,
+        DEFAULT_SERVICE_MIN_RESTART_TIME_BETWEEN,
+        DEFAULT_SERVICE_MIN_RESTART_TIME_BETWEEN * 2,
+        DEFAULT_SERVICE_MIN_RESTART_TIME_BETWEEN * 3
+    };
+
+    private MockitoSession mMockingSession;
+    private ActivityManagerService mService;
+    private ActiveServices mActiveServices;
+
+    @Before
+    public void setUp() {
+        mMockingSession =
+                mockitoSession()
+                        .initMocks(this)
+                        .strictness(Strictness.LENIENT)
+                        .mockStatic(CompatChanges.class)
+                        .startMocking();
+        // Most tests require a non-null ActivityManagerService.  Create one now.  If the test
+        // requires a specialized mock, the test can replace this value.
+        mService = mock(ActivityManagerService.class);
+    }
+
+    @After
+    public void tearDown() {
+        if (mMockingSession != null) {
+            mMockingSession.finishMocking();
+        }
+    }
+
+    @SuppressWarnings("GuardedBy")
+    @Test
+    public void rescheduleServiceRestartsOnChanges() {
+        prepareTestRescheduleServiceRestarts();
+        final long now = SystemClock.uptimeMillis();
+        final long btwn = mService.mConstants.SERVICE_MIN_RESTART_TIME_BETWEEN;
+        final long rd0 = 0;
+        final long rd1 = 1000;
+        final long rd2 = rd1 + btwn;
+        final long rd3 = rd2 + btwn;
+        final long rd4 = rd3 + btwn * 10;
+        final long rd5 = rd4 + btwn;
+        int memFactor = ADJ_MEM_FACTOR_MODERATE;
+        when(mService.mAppProfiler.getLastMemoryLevelLocked()).thenReturn(memFactor);
+        fillInRestartingServices(now, new long[] {rd0, rd1, rd2, rd3, rd4, rd5});
+
+        // Test enable/disable.
+        mActiveServices.rescheduleServiceRestartOnMemoryPressureIfNeededLocked(false, true, now);
+        long extra = mService.mConstants.mExtraServiceRestartDelayOnMemPressure[memFactor];
+        verifyDelays(
+                now,
+                new long[] {rd0, extra, btwn + extra * 2, btwn * 2 + extra * 3, rd4, rd5 + extra});
+        mActiveServices.rescheduleServiceRestartOnMemoryPressureIfNeededLocked(true, false, now);
+        verifyDelays(now, new long[] {rd0, rd1, rd2, rd3, rd4, rd5});
+
+        final long elapsed = 10;
+        final long now2 = now + elapsed;
+        mActiveServices.rescheduleServiceRestartOnMemoryPressureIfNeededLocked(false, true, now2);
+        verifyDelays(
+                now2,
+                new long[] {
+                    rd0 - elapsed,
+                    extra - elapsed,
+                    btwn + extra * 2 - elapsed,
+                    btwn * 2 + extra * 3 - elapsed,
+                    rd4 - elapsed,
+                    rd5 + extra - elapsed
+                });
+
+        mActiveServices.rescheduleServiceRestartOnMemoryPressureIfNeededLocked(true, false, now2);
+        verifyDelays(
+                now2,
+                new long[] {
+                    rd0 - elapsed,
+                    rd1 - elapsed,
+                    rd2 - elapsed,
+                    rd3 - elapsed,
+                    rd4 - elapsed,
+                    rd5 - elapsed
+                });
+
+        // Test memory level changes.
+        memFactor = ADJ_MEM_FACTOR_LOW;
+        when(mService.mAppProfiler.getLastMemoryLevelLocked()).thenReturn(memFactor);
+        extra = mService.mConstants.mExtraServiceRestartDelayOnMemPressure[memFactor];
+        final long elapsed3 = elapsed * 2;
+        final long now3 = now + elapsed3;
+        mActiveServices.rescheduleServiceRestartOnMemoryPressureIfNeededLocked(
+                ADJ_MEM_FACTOR_MODERATE, memFactor, "test", now3);
+        verifyDelays(
+                now3,
+                new long[] {
+                    rd0 - elapsed3,
+                    extra - elapsed3,
+                    btwn + extra * 2 - elapsed3,
+                    btwn * 2 + extra * 3 - elapsed3,
+                    rd4 - elapsed3,
+                    rd5 + extra - elapsed3
+                });
+
+        memFactor = ADJ_MEM_FACTOR_CRITICAL;
+        when(mService.mAppProfiler.getLastMemoryLevelLocked()).thenReturn(memFactor);
+        extra = mService.mConstants.mExtraServiceRestartDelayOnMemPressure[memFactor];
+        mService.mAppProfiler = mock(AppProfiler.class);
+        final long elapsed4 = elapsed * 3;
+        final long now4 = now + elapsed4;
+        mActiveServices.rescheduleServiceRestartOnMemoryPressureIfNeededLocked(
+                ADJ_MEM_FACTOR_LOW, memFactor, "test", now4);
+        verifyDelays(
+                now4,
+                new long[] {
+                    rd0 - elapsed4,
+                    extra - elapsed4,
+                    btwn + extra * 2 - elapsed4,
+                    btwn * 2 + extra * 3 - elapsed4,
+                    btwn * 3 + extra * 4 - elapsed4,
+                    btwn * 4 + extra * 5 - elapsed4
+                });
+
+        memFactor = ADJ_MEM_FACTOR_MODERATE;
+        when(mService.mAppProfiler.getLastMemoryLevelLocked()).thenReturn(memFactor);
+        extra = mService.mConstants.mExtraServiceRestartDelayOnMemPressure[memFactor];
+        final long elapsed5 = elapsed * 4;
+        final long now5 = now + elapsed5;
+        mActiveServices.rescheduleServiceRestartOnMemoryPressureIfNeededLocked(
+                ADJ_MEM_FACTOR_CRITICAL, memFactor, "test", now5);
+        verifyDelays(
+                now5,
+                new long[] {
+                    rd0 - elapsed5,
+                    extra - elapsed5,
+                    btwn + extra * 2 - elapsed5,
+                    btwn * 2 + extra * 3 - elapsed5,
+                    rd4 - elapsed5,
+                    rd5 + extra - elapsed5
+                });
+    }
+
+    @SuppressWarnings("GuardedBy")
+    @Test
+    public void rescheduleServiceRestartsOnOtherChanges() {
+        prepareTestRescheduleServiceRestarts();
+        final long now = SystemClock.uptimeMillis();
+        final long btwn = mService.mConstants.SERVICE_MIN_RESTART_TIME_BETWEEN;
+        final long rd0 = 1000;
+        final long rd1 = 2000;
+        final long rd2 = btwn * 10;
+        final long rd3 = 5000;
+        final long rd4 = btwn * 11 + 5000;
+        final long rd5 = 3000;
+        int memFactor = ADJ_MEM_FACTOR_CRITICAL;
+        long extra = mService.mConstants.mExtraServiceRestartDelayOnMemPressure[memFactor];
+        when(mService.mAppProfiler.getLastMemoryLevelLocked()).thenReturn(memFactor);
+
+        fillInRestartingServices(now, new long[] {rd0, rd1, rd2, rd3, rd4, rd5});
+        setNextRestarts(
+                now,
+                new long[] {
+                    extra,
+                    btwn + extra * 2,
+                    btwn * 2 + extra * 3,
+                    btwn * 3 + extra * 4,
+                    btwn * 4 + extra * 5,
+                    btwn * 5 + extra * 6
+                });
+        mActiveServices.mRestartingServices.remove(1);
+        mActiveServices.rescheduleServiceRestartIfPossibleLocked(extra, btwn, "test", now);
+        verifyDelays(
+                now,
+                new long[] {
+                    extra,
+                    rd2,
+                    rd2 + btwn + extra,
+                    rd2 + (btwn + extra) * 2,
+                    rd2 + (btwn + extra) * 3
+                });
+        mActiveServices.mRestartingServices.remove(0);
+        mActiveServices.rescheduleServiceRestartIfPossibleLocked(extra, btwn, "test", now);
+        verifyDelays(now, new long[] {extra, rd2, rd2 + btwn + extra, rd2 + (btwn + extra) * 2});
+        mActiveServices.mRestartingServices.remove(1);
+        mActiveServices.rescheduleServiceRestartIfPossibleLocked(extra, btwn, "test", now);
+        verifyDelays(now, new long[] {extra, btwn + extra * 2, rd4});
+
+        fillInRestartingServices(now, new long[] {rd0, rd1, rd2, rd3, rd4, rd5});
+        setNextRestarts(
+                now,
+                new long[] {
+                    extra,
+                    btwn + extra * 2,
+                    btwn * 2 + extra * 3,
+                    btwn * 3 + extra * 4,
+                    btwn * 4 + extra * 5,
+                    btwn * 5 + extra * 6
+                });
+        mActiveServices.mRestartingServices.remove(1);
+        mActiveServices.rescheduleServiceRestartIfPossibleLocked(extra, btwn, "test", now);
+        memFactor = ADJ_MEM_FACTOR_LOW;
+        extra = mService.mConstants.mExtraServiceRestartDelayOnMemPressure[memFactor];
+        when(mService.mAppProfiler.getLastMemoryLevelLocked()).thenReturn(memFactor);
+        mActiveServices.rescheduleServiceRestartIfPossibleLocked(extra, btwn, "test", now);
+        verifyDelays(
+                now,
+                new long[] {
+                    extra, btwn + extra * 2, rd2, rd2 + btwn + extra, rd2 + (btwn + extra) * 2
+                });
+    }
+
+    @Test
+    public void getProcessNameForService_regularService() {
+        // Regular service
+        final ServiceInfo regularService = createServiceInfo(PROCESS_NAME_1, 0);
+        String processName =
+                ActiveServices.getProcessNameForService(
+                        regularService, null, null, null, false, false, false);
+        assertEquals(PROCESS_NAME_1, processName);
+    }
+
+    @Test
+    public void getProcessNameForService_isolatedService() {
+        // Isolated service
+        final ServiceInfo isolatedService =
+                createServiceInfo(PROCESS_NAME_1, ServiceInfo.FLAG_ISOLATED_PROCESS);
+        final ComponentName component = new ComponentName(PACKAGE_NAME_1, SERVICE_NAME);
+        String processName =
+                ActiveServices.getProcessNameForService(
+                        isolatedService, component, null, null, false, false, false);
+        assertEquals(PROCESS_NAME_1 + ":" + SERVICE_NAME, processName);
+    }
+
+    @Test
+    public void getProcessNameForService_isolatedServiceInPackagePrivateProcess() {
+        // Isolated Service in package private process.
+        final ServiceInfo isolatedService =
+                createServiceInfo(
+                        TRUSTED_ISOLATED_PROCESS_NAME_1, ServiceInfo.FLAG_ISOLATED_PROCESS);
+        final ComponentName componentName = new ComponentName(PACKAGE_NAME_1, SERVICE_NAME);
+        String processName =
+                ActiveServices.getProcessNameForService(
+                        isolatedService, componentName, null, null, false, false, false);
+        assertEquals(TRUSTED_ISOLATED_PROCESS_NAME_1 + ":" + SERVICE_NAME, processName);
+    }
+
+    @Test
+    public void
+            getProcessNameForService_isolatedServiceInPackagePrivateSharedProcess_mainProcess() {
+        // Isolated service in package-private shared process (main process)
+        final ServiceInfo isolatedPackageSharedService =
+                createServiceInfo(PROCESS_NAME_1, ServiceInfo.FLAG_ISOLATED_PROCESS);
+        final ComponentName componentName1 = new ComponentName(PACKAGE_NAME_1, SERVICE_NAME);
+        String packageSharedIsolatedProcessName =
+                ActiveServices.getProcessNameForService(
+                        isolatedPackageSharedService,
+                        componentName1,
+                        null,
+                        null,
+                        false,
+                        false,
+                        true);
+        assertEquals(PROCESS_NAME_1 + ":" + SERVICE_NAME, packageSharedIsolatedProcessName);
+    }
+
+    @Test
+    public void getProcessNameForService_isolatedServiceInPackagePrivateSharedProcess() {
+        // Isolated service in package-private shared process
+        final ServiceInfo isolatedPackageSharedService =
+                createServiceInfo(
+                        TRUSTED_ISOLATED_PROCESS_NAME_1, ServiceInfo.FLAG_ISOLATED_PROCESS);
+        isolatedPackageSharedService.applicationInfo.processName = PACKAGE_NAME_1;
+        final ComponentName componentName1 = new ComponentName(PACKAGE_NAME_1, SERVICE_NAME);
+        String packageSharedIsolatedProcessName =
+                ActiveServices.getProcessNameForService(
+                        isolatedPackageSharedService,
+                        componentName1,
+                        null,
+                        null,
+                        false,
+                        false,
+                        true);
+        assertEquals(TRUSTED_ISOLATED_PROCESS_NAME_1, packageSharedIsolatedProcessName);
+    }
+
+    @Test
+    public void
+            getProcessNameForService_isolatedServiceInPackagePrivateSharedProcess_bindAnother() {
+        // Isolated service in package-private shared process
+        final ServiceInfo isolatedPackageSharedService1 =
+                createServiceInfo(
+                        TRUSTED_ISOLATED_PROCESS_NAME_1, ServiceInfo.FLAG_ISOLATED_PROCESS);
+        isolatedPackageSharedService1.applicationInfo.processName = PACKAGE_NAME_1;
+        final ComponentName componentName1 = new ComponentName(PACKAGE_NAME_1, SERVICE_NAME);
+
+        // Bind another one in the same isolated process
+        final ServiceInfo isolatedPackageSharedService2 =
+                new ServiceInfo(isolatedPackageSharedService1);
+        String packageSharedIsolatedProcessName =
+                ActiveServices.getProcessNameForService(
+                        isolatedPackageSharedService2,
+                        componentName1,
+                        null,
+                        null,
+                        false,
+                        false,
+                        true);
+        assertEquals(TRUSTED_ISOLATED_PROCESS_NAME_1, packageSharedIsolatedProcessName);
+    }
+
+    @Test
+    public void
+            getProcessNameForService_isolatedServiceInPackagePrivateSharedProcess_bindAnotherApp() {
+        // Isolated service in package-private shared process
+        final ServiceInfo isolatedPackageSharedService1 =
+                createServiceInfo(
+                        TRUSTED_ISOLATED_PROCESS_NAME_1, ServiceInfo.FLAG_ISOLATED_PROCESS);
+        isolatedPackageSharedService1.applicationInfo.processName = PACKAGE_NAME_1;
+        final ComponentName componentName1 = new ComponentName(PACKAGE_NAME_1, SERVICE_NAME);
+
+        // Simulate another app trying to do the bind.
+        final ServiceInfo isolatedPackageSharedService2 =
+                new ServiceInfo(isolatedPackageSharedService1);
+        String packageSharedIsolatedProcessName =
+                ActiveServices.getProcessNameForService(
+                        isolatedPackageSharedService2,
+                        componentName1,
+                        PACKAGE_NAME_2,
+                        null,
+                        false,
+                        false,
+                        true);
+        assertEquals(TRUSTED_ISOLATED_PROCESS_NAME_1, packageSharedIsolatedProcessName);
+    }
+
+    @Test
+    public void
+            getProcessNameForServiceIsolatedServiceInPackagePrivateSharedProcessAnotherAppOwner() {
+        // Isolated service in package-private shared process
+        final ServiceInfo isolatedPackageSharedService1 =
+                createServiceInfo(
+                        TRUSTED_ISOLATED_PROCESS_NAME_1, ServiceInfo.FLAG_ISOLATED_PROCESS);
+        isolatedPackageSharedService1.applicationInfo.processName = PACKAGE_NAME_1;
+
+        // Simulate another app owning the service
+        final ServiceInfo isolatedOtherPackageSharedService =
+                new ServiceInfo(isolatedPackageSharedService1);
+        final ComponentName componentName2 = new ComponentName(PACKAGE_NAME_2, SERVICE_NAME);
+        isolatedOtherPackageSharedService.processName = ISOLATED_PROCESS_NAME_2;
+        isolatedPackageSharedService1.applicationInfo.processName = PACKAGE_NAME_2;
+        String packageSharedIsolatedProcessName =
+                ActiveServices.getProcessNameForService(
+                        isolatedOtherPackageSharedService,
+                        componentName2,
+                        PACKAGE_NAME_1,
+                        null,
+                        false,
+                        false,
+                        true);
+        assertEquals(ISOLATED_PROCESS_NAME_2, packageSharedIsolatedProcessName);
+    }
+
+    @Test
+    public void getProcessNameForService_isolatedServiceInSharedIsolatedProcess() {
+        // Isolated service in shared isolated process
+        final ServiceInfo isolatedServiceShared1 = new ServiceInfo();
+        isolatedServiceShared1.flags = ServiceInfo.FLAG_ISOLATED_PROCESS;
+        final String sharedIsolatedProcessName1 =
+                ActiveServices.getProcessNameForService(
+                        isolatedServiceShared1,
+                        null,
+                        PACKAGE_NAME_1,
+                        ISOLATED_PROCESS_INSTANCE_NAME,
+                        false,
+                        true,
+                        false);
+        assertEquals(SHARED_ISOLATED_PROCESS_NAME, sharedIsolatedProcessName1);
+    }
+
+    @Test
+    public void getProcessNameForService_isolatedServiceInSharedIsolatedProcess_bindAnother() {
+        // Isolated service in shared isolated process
+        final ServiceInfo isolatedServiceShared1 = new ServiceInfo();
+        isolatedServiceShared1.flags = ServiceInfo.FLAG_ISOLATED_PROCESS;
+        final String instanceName = ISOLATED_PROCESS_INSTANCE_NAME;
+        final String callingPackage = PACKAGE_NAME_1;
+        final String sharedIsolatedProcessName1 =
+                ActiveServices.getProcessNameForService(
+                        isolatedServiceShared1,
+                        null,
+                        callingPackage,
+                        instanceName,
+                        false,
+                        true,
+                        false);
+
+        // Bind another one in the same isolated process
+        final ServiceInfo isolatedServiceShared2 = new ServiceInfo(isolatedServiceShared1);
+        final String sharedIsolatedProcessName2 =
+                ActiveServices.getProcessNameForService(
+                        isolatedServiceShared2,
+                        null,
+                        callingPackage,
+                        instanceName,
+                        false,
+                        true,
+                        false);
+        assertEquals(sharedIsolatedProcessName1, sharedIsolatedProcessName2);
+    }
+
+    @Test
+    public void getProcessNameForService_isolatedServiceInSharedIsolatedProcess_bindAnotherApp() {
+        // Isolated service in shared isolated process
+        final ServiceInfo isolatedServiceShared1 = new ServiceInfo();
+        isolatedServiceShared1.flags = ServiceInfo.FLAG_ISOLATED_PROCESS;
+        final String instanceName = ISOLATED_PROCESS_INSTANCE_NAME;
+        final String sharedIsolatedProcessName1 =
+                ActiveServices.getProcessNameForService(
+                        isolatedServiceShared1,
+                        null,
+                        PACKAGE_NAME_1,
+                        instanceName,
+                        false,
+                        true,
+                        false);
+
+        // Simulate another app trying to do the bind
+        final ServiceInfo isolatedServiceShared2 = new ServiceInfo(isolatedServiceShared1);
+        final String sharedIsolatedProcessName2 =
+                ActiveServices.getProcessNameForService(
+                        isolatedServiceShared2,
+                        null,
+                        PACKAGE_NAME_2,
+                        instanceName,
+                        false,
+                        true,
+                        false);
+        assertNotEquals(sharedIsolatedProcessName1, sharedIsolatedProcessName2);
+    }
+
+    @Test
+    public void bringUpServiceLocked_pcc() throws Exception {
+        prepareTestRescheduleServiceRestarts();
+        mService.mPackageManagerInt = mock(PackageManagerInternal.class);
+        mService.mUsageStatsService = mock(UsageStatsManagerInternal.class);
+
+        setFieldValue(
+                ActivityManagerService.class,
+                mService,
+                "mUserController",
+                mock(UserController.class));
+        setFieldValue(
+                ActivityManagerService.class, mService, "mProcessList", mock(ProcessList.class));
+        setFieldValue(ActiveServices.class, mActiveServices, "mPendingServices", new ArrayList<>());
+
+        final ServiceRecord r = createPccServiceRecord();
+        final ProcessRecord proc = createPccProcessRecord(mService);
+
+        // Simulate no existing process for this ServiceRecord
+        when(mService.getProcessRecordLocked(anyString(), anyInt())).thenReturn(null);
+
+        when(mService.mUserController.hasStartedUserState(anyInt())).thenReturn(true);
+        when(mService.mProcessList.getAppStartInfoTracker())
+                .thenReturn(mock(AppStartInfoTracker.class));
+        when(mService.startProcessLocked(
+                        anyString(),
+                        any(),
+                        anyBoolean(),
+                        anyInt(),
+                        any(),
+                        anyInt(),
+                        anyBoolean(),
+                        anyBoolean()))
+                .thenReturn(proc);
+
+        doCallRealMethod()
+                .when(mActiveServices)
+                .bringUpServiceLocked(
+                        any(),
+                        anyInt(),
+                        anyBoolean(),
+                        anyBoolean(),
+                        anyBoolean(),
+                        anyBoolean(),
+                        anyBoolean(),
+                        anyInt());
+
+        mActiveServices.bringUpServiceLocked(
+                r, r.serviceInfo.flags, false, false, false, false, false, 0);
+
+        verify(mService).getProcessRecordLocked(r.processName, r.appInfo.pccUid);
+
+        final ArgumentCaptor<HostingRecord> hostingRecord =
+                ArgumentCaptor.forClass(HostingRecord.class);
+        verify(mService)
+                .startProcessLocked(
+                        eq(r.processName),
+                        eq(r.appInfo),
+                        eq(true),
+                        anyInt(),
+                        hostingRecord.capture(),
+                        eq(Process.ZYGOTE_POLICY_FLAG_EMPTY),
+                        eq(false),
+                        eq(false));
+        assertTrue(hostingRecord.getValue().isPcc());
+    }
+
+    @Test
+    public void attachApplicationLocked_pcc() throws Exception {
+        prepareTestRescheduleServiceRestarts();
+        mService = mock(ActivityManagerService.class);
+        mService.mProcessStateController = mock(ProcessStateController.class);
+        mService.mAppProfiler = mock(AppProfiler.class);
+        mService.mActivityTaskManager = mock(ActivityTaskManagerService.class);
+        mService.mPackageManagerInt = mock(PackageManagerInternal.class);
+        mService.mProcessStateController = mock(ProcessStateController.class);
+
+        setFieldValue(ActiveServices.class, mActiveServices, "mAm", mService);
+
+        final ServiceRecord r = createPccServiceRecord();
+        final ProcessRecord proc = createPccProcessRecord(mService);
+
+        // Make sure we call the real attachApplicationLocked, and mock out the stuff it calls
+        doCallRealMethod().when(mActiveServices).attachApplicationLocked(any(), anyString());
+        when(mService.mProcessStateController.startServiceBatchSession(anyInt())).thenReturn(null);
+        when(mService.mProcessStateController.getOomConstants()).thenReturn(null);
+        doNothing()
+                .when(mActiveServices)
+                .realStartServiceLocked(
+                        any(ServiceRecord.class),
+                        any(ProcessRecord.class),
+                        any(IApplicationThread.class),
+                        anyInt(),
+                        any(UidRecord.class),
+                        anyBoolean(),
+                        anyBoolean(),
+                        anyInt());
+        when(mActiveServices.isServiceNeededLocked(
+                        any(ServiceRecord.class), anyBoolean(), anyBoolean()))
+                .thenReturn(true);
+
+        setFieldValue(ActiveServices.class, mActiveServices, "mPendingServices", new ArrayList<>());
+        mActiveServices.mPendingServices.add(r);
+
+        mActiveServices.attachApplicationLocked(proc, r.processName);
+
+        assertTrue(mActiveServices.mPendingServices.isEmpty());
+    }
+
+    private void prepareTestRescheduleServiceRestarts() {
+        mService = mock(ActivityManagerService.class);
+        mService.mConstants = mock(ActivityManagerConstants.class);
+        mService.mConstants.mEnableExtraServiceRestartDelayOnMemPressure = true;
+        mService.mConstants.mExtraServiceRestartDelayOnMemPressure =
+                DEFAULT_EXTRA_SERVICE_RESTART_DELAY_ON_MEM_PRESSURE;
+        mService.mConstants.SERVICE_MIN_RESTART_TIME_BETWEEN =
+                DEFAULT_SERVICE_MIN_RESTART_TIME_BETWEEN;
+        AppProfiler profiler = mock(AppProfiler.class);
+        setFieldValue(ActivityManagerService.class, mService, "mAppProfiler", profiler);
+        when(profiler.getLastMemoryLevelLocked()).thenReturn(ADJ_MEM_FACTOR_NORMAL);
+        mActiveServices = mock(ActiveServices.class);
+        setFieldValue(ActiveServices.class, mActiveServices, "mAm", mService);
+        setFieldValue(
+                ActiveServices.class, mActiveServices, "mRestartingServices", new ArrayList<>());
+        setFieldValue(
+                ActiveServices.class,
+                mActiveServices,
+                "mRestartBackoffDisabledPackages",
+                new ArraySet<>());
+        doNothing()
+                .when(mActiveServices)
+                .performScheduleRestartLocked(
+                        any(ServiceRecord.class), any(String.class), any(String.class), anyLong());
+        doCallRealMethod()
+                .when(mActiveServices)
+                .rescheduleServiceRestartOnMemoryPressureIfNeededLocked(
+                        anyBoolean(), anyBoolean(), anyLong());
+        doCallRealMethod()
+                .when(mActiveServices)
+                .rescheduleServiceRestartOnMemoryPressureIfNeededLocked(
+                        anyInt(), anyInt(), any(String.class), anyLong());
+        doCallRealMethod()
+                .when(mActiveServices)
+                .rescheduleServiceRestartIfPossibleLocked(
+                        anyLong(), anyLong(), any(String.class), anyLong());
+        doCallRealMethod()
+                .when(mActiveServices)
+                .performRescheduleServiceRestartOnMemoryPressureLocked(
+                        anyLong(), anyLong(), any(String.class), anyLong());
+        doCallRealMethod().when(mActiveServices).getExtraRestartTimeInBetweenLocked();
+        doCallRealMethod()
+                .when(mActiveServices)
+                .isServiceRestartBackoffEnabledLocked(any(String.class));
+    }
+
+    private static <T> void setFieldValue(Class<?> clazz, Object obj, String fieldName, T val) {
+        try {
+            Field field = clazz.getDeclaredField(fieldName);
+            field.setAccessible(true);
+            Field mfield = Field.class.getDeclaredField("accessFlags");
+            mfield.setAccessible(true);
+            mfield.setInt(field, mfield.getInt(field) & ~(Modifier.FINAL | Modifier.PRIVATE));
+            field.set(obj, val);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+        }
+    }
+
+    private void fillInRestartingServices(long now, long[] delays) {
+        mActiveServices.mRestartingServices.clear();
+        for (int i = 0; i < delays.length; i++) {
+            mActiveServices.mRestartingServices.add(
+                    createRestartingService("testpackage" + i, now, delays[i]));
+        }
+    }
+
+    private void setNextRestarts(long now, long[] nextRestartDelays) {
+        for (int i = 0; i < nextRestartDelays.length; i++) {
+            final ServiceRecord r = mActiveServices.mRestartingServices.get(i);
+            r.restartDelay = nextRestartDelays[i];
+            r.nextRestartTime = now + r.restartDelay;
+        }
+    }
+
+    private ServiceRecord createRestartingService(String packageName, long now, long delay) {
+        final ServiceRecord r = mock(ServiceRecord.class);
+        r.appInfo = new ApplicationInfo();
+        r.appInfo.flags = delay == 0 ? ApplicationInfo.FLAG_PERSISTENT : 0;
+        final ServiceInfo si = new ServiceInfo();
+        setFieldValue(ServiceRecord.class, r, "serviceInfo", si);
+        setFieldValue(ServiceRecord.class, r, "packageName", packageName);
+        si.applicationInfo = r.appInfo;
+        r.nextRestartTime = r.mEarliestRestartTime = now + delay;
+        r.mRestartSchedulingTime = now;
+        r.restartDelay = delay;
+        return r;
+    }
+
+    private void verifyDelays(long now, long[] delays) {
+        for (int i = 0; i < delays.length; i++) {
+            final ServiceRecord r = mActiveServices.mRestartingServices.get(i);
+            assertEquals(
+                    "Expected restart delay=" + delays[i], Math.max(0, delays[i]), r.restartDelay);
+            assertEquals(
+                    "Expected next restart time=" + (now + delays[i]),
+                    now + delays[i],
+                    r.nextRestartTime);
+        }
+    }
+
+    private ServiceInfo createServiceInfo(String processName, int flags) {
+        final ServiceInfo serviceInfo = new ServiceInfo();
+        serviceInfo.processName = processName;
+        serviceInfo.flags = flags;
+        serviceInfo.applicationInfo = new ApplicationInfo();
+        serviceInfo.applicationInfo.processName = processName;
+        return serviceInfo;
+    }
+
+    private ProcessRecord createPccProcessRecord(ActivityManagerService ams) {
+        final ProcessRecord proc = mock(ProcessRecord.class);
+
+        proc.info = new ApplicationInfo();
+        proc.info.uid = 20001;
+        proc.info.pccUid = 30001;
+        proc.info.packageName = "com.android.pcc";
+        setFieldValue(ProcessRecord.class, proc, "mService", ams);
+        setFieldValue(ProcessRecordInternal.class, proc, "uid", 30001);
+
+        return proc;
+    }
+
+    private ServiceRecord createPccServiceRecord() {
+        final ServiceRecord r = mock(ServiceRecord.class);
+        r.appInfo = new ApplicationInfo();
+        r.appInfo.uid = 20001;
+        r.appInfo.pccUid = 30001;
+        r.appInfo.packageName = "com.android.pcc";
+        final ServiceInfo si = new ServiceInfo();
+        si.applicationInfo = r.appInfo;
+        si.flags = ServiceInfo.FLAG_RUN_IN_PCC_SANDBOX;
+        setFieldValue(ServiceRecord.class, r, "serviceInfo", si);
+        setFieldValue(ServiceRecord.class, r, "processName", "test");
+        setFieldValue(ServiceRecord.class, r, "intent", new Intent.FilterComparison(new Intent()));
+        setFieldValue(
+                ServiceRecordInternal.class, r, "instanceName", new ComponentName("pkg", "class"));
+        return r;
+    }
+
+    @Test
+    public void testGenerateAdditionalSeInfoFromService_hds_returnsIsolatedComputeApp() {
+        ActiveServices activeServices = new ActiveServices(mService);
+        final ServiceRecord r = mock(ServiceRecord.class);
+        final ServiceInfo si = new ServiceInfo();
+        si.flags = ServiceInfo.FLAG_ISOLATED_PROCESS;
+        setFieldValue(ServiceRecord.class, r, "serviceInfo", si);
+        setFieldValue(ServiceRecord.class, r, "packageName", "com.foo");
+        Intent intent = new Intent(HotwordDetectionService.SERVICE_INTERFACE);
+        String seInfo = activeServices.generateAdditionalSeInfoFromService(intent, r);
+        assertEquals(":isolatedComputeApp", seInfo);
+    }
+
+    @Test
+    public void testGenerateAdditionalSeInfoFromService_vqds_returnsIsolatedComputeApp() {
+        ActiveServices activeServices = new ActiveServices(mService);
+        final ServiceRecord r = mock(ServiceRecord.class);
+        final ServiceInfo si = new ServiceInfo();
+        si.flags = ServiceInfo.FLAG_ISOLATED_PROCESS;
+        setFieldValue(ServiceRecord.class, r, "serviceInfo", si);
+        setFieldValue(ServiceRecord.class, r, "packageName", "com.foo");
+        Intent intent = new Intent(VisualQueryDetectionService.SERVICE_INTERFACE);
+        String seInfo = activeServices.generateAdditionalSeInfoFromService(intent, r);
+        assertEquals(":isolatedComputeApp", seInfo);
+    }
+
+    @Test
+    public void testGenerateAdditionalSeInfoFromService_sandboxService_returnsIsolatedComputeApp() {
+        ActiveServices activeServices = new ActiveServices(mService);
+        final ServiceRecord r = mock(ServiceRecord.class);
+        final ServiceInfo si = new ServiceInfo();
+        si.flags = 0;
+        setFieldValue(ServiceRecord.class, r, "serviceInfo", si);
+        setFieldValue(ServiceRecord.class, r, "packageName", "com.foo");
+        Intent intent = new Intent(OnDeviceSandboxedInferenceService.SERVICE_INTERFACE);
+        String seInfo = activeServices.generateAdditionalSeInfoFromService(intent, r);
+        assertEquals(":isolatedComputeApp", seInfo);
+    }
+
+    @Test
+    public void testGenerateAdditionalSeInfoFromService_wearableServiceNoRestriction_returnsICA() {
+        ActiveServices activeServices = new ActiveServices(mService);
+        final ServiceRecord r = mock(ServiceRecord.class);
+        final ServiceInfo si = new ServiceInfo();
+        si.flags = 0;
+        setFieldValue(ServiceRecord.class, r, "serviceInfo", si);
+        setFieldValue(ServiceRecord.class, r, "packageName", "com.foo");
+        Intent intent = new Intent(WearableSensingService.SERVICE_INTERFACE);
+        when(mService.hasRestrictedAssociations(r.packageName)).thenReturn(false);
+        String seInfo = activeServices.generateAdditionalSeInfoFromService(intent, r);
+        assertEquals(":isolatedComputeApp", seInfo);
+    }
+
+    @Test
+    public void
+            testGenerateAdditionalSeInfoFromService_wearableServiceWithRestriction_returnsEmpty() {
+        ActiveServices activeServices = new ActiveServices(mService);
+        final ServiceRecord r = mock(ServiceRecord.class);
+        final ServiceInfo si = new ServiceInfo();
+        si.flags = 0;
+        setFieldValue(ServiceRecord.class, r, "serviceInfo", si);
+        setFieldValue(ServiceRecord.class, r, "packageName", "com.foo");
+        Intent intent = new Intent(WearableSensingService.SERVICE_INTERFACE);
+        when(mService.hasRestrictedAssociations(r.packageName)).thenReturn(true);
+        String seInfo = activeServices.generateAdditionalSeInfoFromService(intent, r);
+        assertEquals("", seInfo);
+    }
+
+    @Test
+    public void testGenerateAdditionalSeInfoFromService_PccService_ReturnsEmpty() {
+        ActiveServices activeServices = new ActiveServices(mService);
+        ServiceRecord r = createPccServiceRecord();
+        Intent intent = new Intent(HotwordDetectionService.SERVICE_INTERFACE);
+        String seInfo = activeServices.generateAdditionalSeInfoFromService(intent, r);
+        assertEquals("", seInfo);
+    }
+
+    @Test
+    public void testGenerateAdditionalSeInfoFromService_NormalService_ReturnsEmpty() {
+        ActiveServices activeServices = new ActiveServices(mService);
+        final ServiceRecord r = mock(ServiceRecord.class);
+        final ServiceInfo si = new ServiceInfo();
+        si.flags = 0;
+        setFieldValue(ServiceRecord.class, r, "serviceInfo", si);
+        setFieldValue(ServiceRecord.class, r, "packageName", "com.foo");
+        Intent intent = new Intent("com.foo.bar.MY_SERVICE");
+        String seInfo = activeServices.generateAdditionalSeInfoFromService(intent, r);
+        assertEquals("", seInfo);
+    }
+
+    @Test
+    public void testGenerateAdditionalSeInfoFromService_NullIntentAction_ReturnsEmpty() {
+        ActiveServices activeServices = new ActiveServices(mService);
+        final ServiceRecord r = mock(ServiceRecord.class);
+        final ServiceInfo si = new ServiceInfo();
+        si.flags = 0;
+        setFieldValue(ServiceRecord.class, r, "serviceInfo", si);
+        setFieldValue(ServiceRecord.class, r, "packageName", "com.foo");
+        Intent intent = new Intent();
+        String seInfo = activeServices.generateAdditionalSeInfoFromService(intent, r);
+        assertEquals("", seInfo);
+    }
+
+    @Test
+    public void testGenerateAdditionalSeInfoFromService_NullIntent_ReturnsEmpty() {
+        ActiveServices activeServices = new ActiveServices(mService);
+        final ServiceRecord r = mock(ServiceRecord.class);
+        final ServiceInfo si = new ServiceInfo();
+        si.flags = 0;
+        setFieldValue(ServiceRecord.class, r, "serviceInfo", si);
+        setFieldValue(ServiceRecord.class, r, "packageName", "com.foo");
+        String seInfo = activeServices.generateAdditionalSeInfoFromService(null, r);
+        assertEquals("", seInfo);
+    }
+}

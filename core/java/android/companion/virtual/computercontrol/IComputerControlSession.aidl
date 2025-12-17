@@ -1,0 +1,83 @@
+/*
+ * Copyright (C) 2025 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package android.companion.virtual.computercontrol;
+
+import android.app.PendingIntent;
+import android.companion.virtual.computercontrol.IComputerControlLifecycleCallback;
+import android.companion.virtual.computercontrol.IInteractiveMirror;
+import android.view.Surface;
+import android.view.SurfaceControl;
+
+/**
+ * Interface for computer control session management.
+ *
+ * @hide
+ */
+interface IComputerControlSession {
+
+    /**
+     * Initializes the computer control session by setting the callback to be notified about
+     * computer control lifecycle changes, and configuring the Surface for the session.
+     */
+    void initialize(in IComputerControlLifecycleCallback listener, in Surface surface);
+
+    /** Launches an application on the trusted virtual display. */
+    void launchApplication(in String packageName, in String className);
+
+    /** Hand over full control of the automation session to the user. */
+    void handOverApplications();
+
+    /* Injects a tap event into the trusted virtual display. */
+    void tap(int x, int y);
+
+    /* Injects a swipe event into the trusted virtual display. */
+    void swipe(int fromX, int fromY, int toX, int toY);
+
+    /** Injects a long press event into the trusted virtual display. */
+    void longPress(int x, int y);
+
+    /** Creates an interactive mirror of the session's virtual display. */
+    IInteractiveMirror createInteractiveMirror(out SurfaceControl mirrorSurface);
+
+    /**
+     * Inserts text into the current active input connection. If there is no active input
+     * connection, this method is no-op.
+     *
+     * @param text to be inserted
+     * @param replaceExisting whether the existing text in the input field should be replaced. If
+     *                        {@code false}, we will insert the text the current cursor position.
+     * @param commit whether the text should be submitted after insertion
+     */
+    void insertText(in String text, boolean replaceExisting, boolean commit);
+
+    /** Performs computer control action on the computer control display. */
+    void performAction(int actionCode);
+
+    /** Attaches a notification to the session, to make it non-dismissable. */
+    void attachNotificationInfo(int notificationId, in String notificationTag);
+
+    /**
+     * Sets the intent launched when the user wants to preview the automation, or null if none.
+     *
+     * <p>This overrides the intent set in {@link
+     * ComputerControlSessionParams.Builder#setPreviewIntent}.
+     */
+    void setPreviewIntent(in @nullable PendingIntent previewIntent);
+
+    /** Closes this session. */
+    void close();
+}

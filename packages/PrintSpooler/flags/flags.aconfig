@@ -1,0 +1,49 @@
+package: "com.android.printspooler.flags"
+container: "system"
+
+flag {
+  name: "printing_telemetry"
+  namespace: "printing"
+  description: "Metrics tracking final print job status, printer discovery, printer capabilities, and major UI actions."
+  bug: "390478410"
+}
+
+flag {
+    name: "enable_print_debug_option"
+    namespace: "printing"
+    description: "Enable extra debug logging by checking a runtime system property."
+    bug: "397418860"
+}
+
+flag {
+    name: "skip_service_warning"
+    namespace: "printing"
+    description: "Skip displaying the first-use print service warning."
+    bug: "455021653"
+}
+
+flag {
+    name: "grayscale_preview"
+    namespace: "printing"
+    description: "Display preview images in grayscale when B&W is selected."
+    bug: "455021653"
+}
+
+flag {
+    name: "updated_button_layout"
+    namespace: "printing"
+    description: "Replace print icon button with explicit print and cancel buttons."
+    bug: "455021653"
+    is_fixed_read_only: true
+}
+
+flag {
+    name: "dynamic_column_width"
+    namespace: "printing"
+    description: "Change option column counts based on window width instead of device width."
+    bug: "460133065"
+    metadata {
+      purpose: PURPOSE_BUGFIX
+    }
+    is_fixed_read_only: true
+}
