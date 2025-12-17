@@ -1,0 +1,217 @@
+package: "com.android.server.accessibility"
+container: "system"
+
+# NOTE: Keep alphabetized to help limit merge conflicts from multiple simultaneous editors.
+flag {
+    name: "accessibility_debug_log_base_on_prop"
+    namespace: "accessibility"
+    description: "Enable/Disable debug log by setting property. Support per file LOG_TAG or all files by using TAG AccessibilityLogUtil"
+    bug: "438268325"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "cleanup_a11y_overlays"
+    namespace: "accessibility"
+    description: "Removes all attached accessibility overlays when a service is removed."
+    bug: "271490102"
+}
+
+flag {
+    name: "enable_autoclick_for_connected_displays"
+    namespace: "accessibility"
+    description: "Fix autoclick to work with connected displays."
+    bug: "407807880"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "enable_autoclick_indicator"
+    namespace: "accessibility"
+    description: "Whether to show autoclick indicator when autoclick feature is enabled."
+    bug: "383901288"
+}
+
+flag {
+    name: "enable_a11y_checker_logging"
+    namespace: "accessibility"
+    description: "Whether to identify and log app a11y issues."
+    bug: "325420273"
+}
+
+flag {
+    name: "enable_braille_suw_immediate_connections"
+    namespace: "accessibility"
+    description: "Whether to allow Braille devices to connect automatically in the SUW."
+    bug: "400776305"
+}
+
+flag {
+    name: "enable_color_correction_saturation"
+    namespace: "accessibility"
+    description: "Feature allows users to change color correction saturation for daltonizer."
+    bug: "322829049"
+}
+
+flag {
+  name: "enable_color_inversion_in_suw"
+  namespace: "accessibility"
+  description: "Allows users to control color inversion in the SetupWizard Vision settings page."
+  bug: "453531997"
+}
+
+flag {
+    name: "enable_color_daltonizer_in_suw"
+    namespace: "accessibility"
+    description: "Allows users to control color correction in the SetupWizard Accessibility settings page."
+    bug: "447326297"
+}
+
+flag {
+    name: "enable_key_gesture_shortcut_settings"
+    namespace: "accessibility"
+    description: "Adds the keyboard gesture to relevant accessibility shortcut settings pages"
+    bug: "453743837"
+}
+
+flag {
+    name: "enable_magnification_joystick"
+    namespace: "accessibility"
+    description: "Whether to enable joystick controls for magnification"
+    bug: "297211257"
+}
+
+flag {
+    name: "enable_magnification_multiple_finger_multiple_tap_gesture"
+    namespace: "accessibility"
+    description: "Whether to enable multi-finger-multi-tap gesture for magnification"
+    bug: "257274411"
+}
+
+flag {
+    name: "enable_magnification_one_finger_panning_gesture"
+    namespace: "accessibility"
+    description: "Whether to allow easy-mode (one finger panning gesture) for magnification"
+    bug: "282039824"
+}
+
+flag {
+    name: "enable_magnification_rebased_delayed_motion_event"
+    namespace: "accessibility"
+    description: "Whether to dispatch rebased MotionEvents for Magnification delayed events to fix timestamp synchronization issues"
+    bug: "279211403"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "enable_mouse_key_enhancement"
+    namespace: "accessibility"
+    description: "Whether user can change mouse key acceleration, speed and use numeric keypad."
+    bug: "409330539"
+}
+
+flag {
+    name: "fullscreen_fling_gesture"
+    namespace: "accessibility"
+    description: "When true, adds a fling gesture animation for fullscreen magnification"
+    bug: "319175022"
+}
+
+flag {
+    name: "handle_multi_device_input"
+    namespace: "accessibility"
+    description: "Select a single active device when a multi-device stream is received by AccessibilityInputFilter"
+    bug: "310014874"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "ignore_input_events_from_display_without_handler"
+    namespace: "accessibility"
+    description: "Fixes a bug in AccessibilityInputFilter so that input events from a display without an EventHandler are immediately passed through"
+    bug: "438713099"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "magnification_connection_approves_system_user"
+    namespace: "accessibility"
+    description: "Adds special case to automatically approve the system user when requesting connection"
+    bug: "402109095"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "manager_lifecycle_user_change"
+    namespace: "accessibility"
+    description: "Use A11yManagerService's Lifecycle to change users, instead of listening for user changed events."
+    bug: "393626471"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "pass_through_unprocessed_motion_events"
+    namespace: "accessibility"
+    description: "Fixes screen freeze by passing through motion events that AccessibilityInputFilter declines to process (e.g. during mid-gesture feature enables)."
+    bug: "397138372"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+flag {
+    name: "send_a11y_action_cancel_on_reset"
+    namespace: "accessibility"
+    description: "Sends ACTION_CANCEL to InputDispatcher when AccessibilityInputFilter resets with active pointers to prevent state desynchronization."
+    bug: "433890873"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "send_a11y_events_based_on_state"
+    namespace: "accessibility"
+    description: "Sends accessibility events in TouchExplorer#onAccessibilityEvent based on internal state to keep it consistent. This reduces test flakiness."
+    bug: "295575684"
+}
+
+flag {
+    name: "shell_command_enforce_permission"
+    namespace: "accessibility"
+    description: "Adds a permission check to 'cmd accessibility' shell command"
+    bug: "227200331"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "type_speech_state_change_allowed"
+    namespace: "accessibility"
+    description: "Allow global dispatch for TYPE_SPEECH_STATE_CHANGE"
+    bug: "444032233"
+}
+
+flag {
+    name: "use_state_for_action_up_injection"
+    namespace: "accessibility"
+    description: "Uses the current injected pointer state from mState as the source of truth for the pointer bitmask when sending ACTION_UP, preventing injection failures."
+    bug: "445338326"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}

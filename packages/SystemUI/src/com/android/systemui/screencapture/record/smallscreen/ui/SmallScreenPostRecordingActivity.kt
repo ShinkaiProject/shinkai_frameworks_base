@@ -1,0 +1,245 @@
+/*
+ * Copyright (C) 2025 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.systemui.screencapture.record.smallscreen.ui
+
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Bundle
+import android.view.Display
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.booleanResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.media3.common.MimeTypes
+import com.android.compose.PlatformOutlinedButton
+import com.android.compose.theme.PlatformTheme
+import com.android.systemui.lifecycle.rememberViewModel
+import com.android.systemui.res.R
+import com.android.systemui.screencapture.common.ui.compose.LoadingIcon
+import com.android.systemui.screencapture.common.ui.compose.PrimaryButton
+import com.android.systemui.screencapture.common.ui.compose.loadIcon
+import com.android.systemui.screencapture.common.ui.viewmodel.DrawableLoaderViewModel
+import com.android.systemui.screencapture.record.smallscreen.player.ui.compose.VideoPlayer
+import com.android.systemui.screencapture.record.smallscreen.ui.viewmodel.PostRecordingViewModel
+import com.android.systemui.screencapture.ui.postRecordingConfirmDeletion
+import com.android.systemui.statusbar.phone.SystemUIDialogFactory
+import javax.inject.Inject
+import kotlinx.coroutines.launch
+
+class SmallScreenPostRecordingActivity
+@Inject
+constructor(
+    private val videoPlayer: VideoPlayer,
+    private val viewModelFactory: PostRecordingViewModel.Factory,
+    private val postRecordSnackbarDialogs: PostRecordSnackbarDialogs,
+    private val systemUIDialogFactory: SystemUIDialogFactory,
+) : ComponentActivity() {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        setContent { PlatformTheme { Content() } }
+    }
+
+    @Composable
+    private fun Content() {
+        val coroutineScope = rememberCoroutineScope()
+        val viewModel =
+            rememberViewModel("SmallScreenPostRecordingActivity#viewModel") {
+                viewModelFactory.create(
+                    intent.data ?: error("Data URI is missing"),
+                    Display.DEFAULT_DISPLAY,
+                )
+            }
+
+        val shouldShowVideoSaved = intent.shouldWaitForVideo()
+        LaunchedEffect(shouldShowVideoSaved, viewModel.isVideoSaved) {
+            if (shouldShowVideoSaved && viewModel.isVideoSaved) {
+                intent.putExtra(SHOULD_WAIT_FOR_VIDEO, false)
+                postRecordSnackbarDialogs.showVideoSaved()
+            }
+        }
+
+        val shouldUseFlatBottomBar =
+            booleanResource(R.bool.screen_record_post_recording_flat_bottom_bar)
+        Box(
+            modifier =
+                Modifier.background(MaterialTheme.colorScheme.surface)
+                    .windowInsetsPadding(WindowInsets.safeDrawing)
+        ) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                if (!shouldUseFlatBottomBar) {
+                    Spacer(modifier = Modifier.size(50.dp))
+                }
+                Box(modifier = Modifier.weight(1f).align(Alignment.CenterHorizontally)) {
+                    videoPlayer.Content(uri = viewModel.videoUri, modifier = Modifier.fillMaxSize())
+                }
+                Spacer(modifier = Modifier.size(32.dp))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.padding(horizontal = 24.dp).height(40.dp),
+                ) {
+                    val rowModifier = Modifier.weight(1f).fillMaxHeight()
+                    PostRecordButton(
+                        onClick = {
+                            viewModel.retake()
+                            finish()
+                        },
+                        drawableLoaderViewModel = viewModel,
+                        iconRes = R.drawable.ic_arrow_back,
+                        labelRes = R.string.screen_record_retake,
+                        modifier = rowModifier,
+                    )
+                    PostRecordButton(
+                        onClick = { viewModel.edit() },
+                        drawableLoaderViewModel = viewModel,
+                        iconRes = R.drawable.ic_edit_square,
+                        labelRes = R.string.screen_record_edit,
+                        modifier = rowModifier,
+                    )
+                    PostRecordButton(
+                        onClick = {
+                            coroutineScope.launch {
+                                if (
+                                    postRecordingConfirmDeletion(
+                                        systemUIDialogFactory,
+                                        this@SmallScreenPostRecordingActivity,
+                                        viewModel,
+                                    )
+                                ) {
+                                    postRecordSnackbarDialogs.showVideoDeleted(viewModel.videoUri)
+                                    finish()
+                                }
+                            }
+                        },
+                        drawableLoaderViewModel = viewModel,
+                        iconRes = R.drawable.ic_screenshot_delete,
+                        labelRes = R.string.screen_record_delete,
+                        modifier = rowModifier,
+                    )
+                    if (shouldUseFlatBottomBar) {
+                        PrimaryButton(
+                            text = stringResource(R.string.screenrecord_share_label),
+                            onClick = { viewModel.share() },
+                            modifier = rowModifier,
+                        )
+                    }
+                }
+                if (!shouldUseFlatBottomBar) {
+                    val shareIcon by
+                        loadIcon(
+                            viewModel,
+                            R.drawable.ic_screenshot_share,
+                            contentDescription = null,
+                        )
+                    PrimaryButton(
+                        text = stringResource(R.string.screenrecord_share_label),
+                        icon = shareIcon,
+                        onClick = { viewModel.share() },
+                        modifier =
+                            Modifier.fillMaxWidth()
+                                .padding(horizontal = 24.dp, vertical = 16.dp)
+                                .height(56.dp),
+                    )
+                }
+            }
+        }
+    }
+
+    companion object {
+
+        private const val SHOULD_WAIT_FOR_VIDEO = "should_show_video_saved"
+
+        /** Immediately shows the recording by the [videoUri] */
+        fun showRecording(context: Context, videoUri: Uri): Intent = createIntent(context, videoUri)
+
+        /**
+         * Listens to the [ScreenRecordingsInteractor] for the recording status identified by the
+         * [videoUri]
+         */
+        fun waitForRecording(context: Context, videoUri: Uri): Intent =
+            createIntent(context, videoUri) { putExtra(SHOULD_WAIT_FOR_VIDEO, true) }
+
+        private fun createIntent(
+            context: Context,
+            videoUri: Uri,
+            setup: Intent.() -> Unit = {},
+        ): Intent {
+            return Intent(context, SmallScreenPostRecordingActivity::class.java)
+                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                .setDataAndType(videoUri, MimeTypes.VIDEO_MP4)
+                .apply(setup)
+        }
+
+        private fun Intent.shouldWaitForVideo(): Boolean =
+            getBooleanExtra(SHOULD_WAIT_FOR_VIDEO, false)
+    }
+}
+
+@Composable
+private fun PostRecordButton(
+    onClick: () -> Unit,
+    @DrawableRes iconRes: Int,
+    labelRes: Int,
+    drawableLoaderViewModel: DrawableLoaderViewModel,
+    modifier: Modifier = Modifier,
+) {
+    PlatformOutlinedButton(
+        onClick = onClick,
+        modifier = modifier,
+        colors =
+            ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
+        border = BorderStroke(width = 1.dp, color = MaterialTheme.colorScheme.outlineVariant),
+    ) {
+        LoadingIcon(
+            icon = loadIcon(drawableLoaderViewModel, iconRes, contentDescription = null).value,
+            modifier = Modifier.size(20.dp),
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(text = stringResource(labelRes), style = MaterialTheme.typography.labelLarge)
+    }
+}

@@ -1,0 +1,22 @@
+package: "com.android.systemui"
+container: "system"
+
+# go/keep-sorted start block=yes newline_separated=yes by_regex=name:\s*"([^"]+)"
+flag {
+    name: "launch_new_fsi_on_update"
+    namespace: "notifications"
+    description: "Launch a notification's fullScreenIntent when it is updated by the app from not having one to having one."
+    bug: "448616024"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "notification_chip_from_compact_content"
+    namespace: "notifications"
+    description: "Use resolveCompactContent() as the source of truth for promoted notification chips."
+    bug: "444195986"
+}
+
+# go/keep-sorted end

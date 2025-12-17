@@ -1,0 +1,16 @@
+package: "com.android.server.flags"
+container: "system"
+
+flag {
+    name: "keystore_in_memory_cleanup"
+    namespace: "desktop_security"
+    description: "Keystore cleans up all components of the UserSuperKeys when the user credential encrypted storage is locked"
+    bug: "384030190"
+}
+
+flag {
+    name: "dynamic_code_logging_service_removal"
+    namespace: "security"
+    description: "Remove the DynamicCodeLoggingService from the platform"
+    bug: "403391929"
+}

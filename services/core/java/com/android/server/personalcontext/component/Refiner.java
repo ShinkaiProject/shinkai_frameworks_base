@@ -1,0 +1,53 @@
+/*
+ * Copyright (C) 2025 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.server.personalcontext.component;
+
+import android.annotation.Nullable;
+import android.content.ComponentName;
+import android.service.personalcontext.hint.ContextHint;
+import android.service.personalcontext.hint.ContextHintWithSignature;
+
+import androidx.annotation.NonNull;
+
+import java.util.Set;
+import java.util.UUID;
+import java.util.function.Consumer;
+
+/**
+ * Interface to abstract away in-process / service-based refiners.
+ *
+ * @hide
+ */
+public interface Refiner extends Component {
+    /** Gets the ComponentName that this component represents. */
+    @Nullable
+    default ComponentName getComponentName() {
+        return null;
+    }
+
+    /** Gets a grouping of hints the refiner is interested in. */
+    @Nullable
+    Set<Set<ContextHintWithSignature>> getInterestedHintClusters(
+            @NonNull Set<ContextHintWithSignature> allContextHints,
+            @NonNull Set<UUID> seenIDs,
+            boolean isFirstRun);
+
+    /** Refines hints into more hints. */
+    void refine(
+            @NonNull Set<ContextHintWithSignature> inputHints,
+            @NonNull Consumer<Set<ContextHint>> callback);
+}

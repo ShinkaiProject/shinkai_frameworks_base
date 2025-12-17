@@ -1,0 +1,34 @@
+package: "android.app"
+container: "system"
+
+flag {
+  name: "live_wallpaper_content_handling"
+  namespace: "systemui"
+  description: "Support for user-generated content in live wallpapers. Only effective after rebooting."
+  bug: "347235611"
+  is_exported: true
+}
+
+flag {
+  name: "enable_wallpaper_transform_surface_control_command"
+  namespace: "systemui"
+  description: "Enables sending SurfaceControl to onCommand that could be used to transform the wallpaper"
+  bug: "399077623"
+  metadata {
+    purpose: PURPOSE_BUGFIX
+  }
+}
+
+flag {
+  name: "enable_connected_displays_wallpaper"
+  namespace: "lse_desktop_experience"
+  description: "Enable wallpaper support in connected displays"
+  bug: "366461618"
+}
+
+flag {
+  name: "enable_wallpaper_description_set_component"
+  namespace: "systemui"
+  description: "Expose setComponent method in WallpaperDescription"
+  bug: "448138290"
+}

@@ -1,0 +1,141 @@
+/*
+ * Copyright (C) 2025 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.server.companion.virtual.computercontrol;
+
+import android.annotation.RequiresNoPermission;
+import android.companion.virtual.computercontrol.IInteractiveMirror;
+import android.companion.virtual.computercontrol.InteractiveMirror;
+import android.gui.DropInputMode;
+import android.util.Slog;
+import android.view.DisplayInfo;
+import android.view.SurfaceControl;
+
+import com.android.server.input.InputManagerInternal;
+import com.android.server.wm.WindowManagerInternal;
+
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+
+/**
+ * A representation of an interactive mirror of a Computer Control Session's Virtual Display.
+ * <p>
+ * The client application will render the {@code mMirrorSurface} from their UI.
+ * <p>
+ * NOTE: Since the application has access to the mirror {@link SurfaceControl}, this means they can
+ * view all content in that mirror surface.
+ */
+final class InteractiveMirrorImpl extends IInteractiveMirror.Stub {
+    private static final String TAG = InteractiveMirrorImpl.class.getSimpleName();
+
+    private final DisplayInfo mDisplayInfo;
+    // The mirror of the VirtualDisplay, used to control sensitive parameters of the surface.
+    // NOTE: This must NOT be sent to the client app, and must remain in system_server.
+    private final WindowManagerInternal.DisplayMirror mMirror;
+    // The parent leash of the mirror that can be safely sent to the client app to be embedded
+    // in its MirrorView.
+    private final SurfaceControl mMirrorLeash;
+    private final Supplier<SurfaceControl.Transaction> mTransactionSupplier;
+    private final InputManagerInternal mInputManagerInternal;
+    private final Consumer<Boolean> mStatsUpdateInteractiveMirror;
+    private final Consumer<InteractiveMirrorImpl> mRemoveInteractiveMirror;
+
+    InteractiveMirrorImpl(WindowManagerInternal.DisplayMirror mirror,
+            Supplier<SurfaceControl.Transaction> transactionSupplier, DisplayInfo displayInfo,
+            InputManagerInternal inputManagerInternal,
+            Consumer<Boolean> statsUpdateInteractiveMirror,
+            Consumer<InteractiveMirrorImpl> removeInteractiveMirror) {
+        mMirror = mirror;
+        mTransactionSupplier = transactionSupplier;
+        mDisplayInfo = displayInfo;
+        mInputManagerInternal = inputManagerInternal;
+        mMirrorLeash = new SurfaceControl.Builder()
+                .setName("InteractiveMirrorImpl#mMirrorLeash$" + mMirror.hashCode())
+                .setContainerLayer()
+                .build();
+        mStatsUpdateInteractiveMirror = statsUpdateInteractiveMirror;
+        mRemoveInteractiveMirror = removeInteractiveMirror;
+
+        Slog.v(TAG, "Creating interactive mirror with SurfaceControl: " + mMirrorLeash);
+        initialize();
+    }
+
+    private void initialize() {
+        try (var transaction = mTransactionSupplier.get()) {
+            transaction
+                    .reparent(mMirror.getMirrorSurfaceControl(), mMirrorLeash)
+                    .show(mMirrorLeash);
+            setInteractiveWithTransaction(InteractiveMirror.DEFAULT_INTERACTIVE, transaction);
+            transaction.apply();
+        }
+    }
+
+    /** Return the mirror leash that can be safely sent to the client app. */
+    SurfaceControl getMirrorLeash() {
+        return mMirrorLeash;
+    }
+
+    @RequiresNoPermission
+    @Override
+    public void setInteractive(boolean interactive) {
+        try (var transaction = mTransactionSupplier.get()) {
+            setInteractiveWithTransaction(interactive, transaction);
+            transaction.apply();
+        }
+    }
+
+    private void setInteractiveWithTransaction(boolean interactive,
+            SurfaceControl.Transaction transaction) {
+        transaction.setDropInputMode(mMirror.getMirrorSurfaceControl(),
+                interactive ? DropInputMode.NONE : DropInputMode.ALL);
+        mStatsUpdateInteractiveMirror.accept(interactive);
+    }
+
+    @RequiresNoPermission
+    @Override
+    public void resize(int width, int height) {
+        if (width <= 0 || height <= 0) {
+            return;
+        }
+
+        final float sx = ((float) mDisplayInfo.logicalWidth) / width;
+        final float sy = ((float) mDisplayInfo.logicalHeight) / height;
+        // The overall scale is the max due to letterboxing / pillarboxing
+        // TODO(b/448309877): Figure out if we need a different scale mechanism here.
+        mInputManagerInternal.setAccessibilityPointerIconScaleFactor(mDisplayInfo.displayId,
+                Math.max(sx, sy));
+    }
+
+    @RequiresNoPermission
+    @Override
+    public void close() {
+        mRemoveInteractiveMirror.accept(this);
+    }
+
+    /**
+     * Closes this InteractiveMirrorImpl. The owner is responsible for ensuring that this method is
+     * only called once.
+     */
+    void closeWithTransaction(SurfaceControl.Transaction transaction) {
+        Slog.v(TAG, "Closing interactive mirror with SurfaceControl: " + mMirrorLeash);
+        transaction.remove(mMirrorLeash);
+        try {
+            mMirror.close();
+        } catch (Exception e) {
+            Slog.e(TAG, "Failed to close DisplayMirror", e);
+        }
+    }
+}

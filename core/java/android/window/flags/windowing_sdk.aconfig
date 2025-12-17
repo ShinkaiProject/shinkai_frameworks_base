@@ -1,0 +1,223 @@
+# proto-file: build/make/tools/aconfig/aconfig_protos/protos/aconfig.proto
+# proto-message: flag_declarations
+# Project link: http://gantry/projects/android_platform_windowing_sdk
+
+package: "com.android.window.flags"
+container: "system"
+
+flag {
+    namespace: "windowing_sdk"
+    name: "activity_embedding_interactive_divider_flag"
+    description: "Whether the interactive divider feature is enabled"
+    bug: "293654166"
+}
+
+flag {
+    namespace: "windowing_sdk"
+    name: "untrusted_embedding_any_app_permission"
+    is_exported: true
+    description: "Feature flag to enable the permission to embed any app in untrusted mode."
+    bug: "293647332"
+    is_fixed_read_only: true
+}
+
+flag {
+    namespace: "windowing_sdk"
+    name: "untrusted_embedding_state_sharing"
+    is_exported: true
+    description: "Feature flag to enable state sharing in untrusted embedding when apps opt in."
+    bug: "293647332"
+    is_fixed_read_only: true
+}
+
+flag {
+    namespace: "windowing_sdk"
+    name: "cover_display_opt_in"
+    is_exported: true
+    description: "Properties to allow apps and activities to opt-in to cover display rendering"
+    bug: "312530526"
+    is_fixed_read_only: true
+}
+
+flag {
+    namespace: "windowing_sdk"
+    name: "rear_display_disable_force_desktop_system_decorations"
+    description: "Block system decorations from being added to a rear display when desktop mode is forced"
+    bug: "346103150"
+    is_fixed_read_only: true
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    namespace: "windowing_sdk"
+    name: "touch_pass_through_opt_in"
+    description: "Requires apps to opt-in to overlay pass through touches and provide APIs to opt-in"
+    bug: "358129114"
+    is_exported: true
+}
+
+flag {
+    namespace: "aaos_core_contrib"
+    name: "safe_region_letterboxing_v1"
+    description: "Enables letterboxing for a safe region"
+    bug: "425949809"
+}
+
+flag {
+    namespace: "windowing_sdk"
+    name: "activity_embedding_metrics"
+    description: "Metrics for Activity Embedding usage in WM Extensions"
+    bug: "399465821"
+}
+
+flag {
+    namespace: "windowing_sdk"
+    name: "enable_experimental_bubbles_controller"
+    description: "Experiment to allow apps to request Bubbles actions in WM Shell"
+    bug: "407149510"
+}
+
+flag {
+    namespace: "windowing_sdk"
+    name: "enable_bubble_root_task"
+    description: "Using a root task to manage Bubble tasks"
+    bug: "407669465"
+}
+
+flag {
+    namespace: "windowing_sdk"
+    name: "fix_bubble_back_gesture"
+    description: "Fix no responsive back gesture on some Bubbled apps"
+    bug: "416330151"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    namespace: "windowing_sdk"
+    name: "allow_multi_window_non_resizable_activities"
+    description: "Allows non-resizable activities to be launched into WINDOWING_MODE_MULTI_WINDOW."
+    bug: "419379112"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    namespace: "aaos_core_contrib"
+    name: "home_activity_always_present"
+    description: "Ensure home activity is always present in the system."
+    bug: "445954436"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    namespace: "windowing_sdk"
+    name: "fix_tf_adjacent_visibility"
+    description: "Fix the incorrect visibility calculation on adjacent TaskFragments."
+    bug: "444352552"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    namespace: "windowing_sdk"
+    name: "fix_tf_adjacent_focus"
+    description: "Fix ANR issue caused by one TaskFragment being non-focusable in an adjacent pair."
+    bug: "454729152"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    namespace: "windowing_sdk"
+    name: "virtual_gamepad_override"
+    description: "Enables the virtual gamepad override on allowlisted games on foldables."
+    bug: "447093535"
+}
+
+flag {
+    namespace: "windowing_sdk"
+    name: "device_engagement_mode"
+    description: "Track and report device engagement modes, indicating the device's current interaction capabilities (e.g. audio-only)."
+    bug: "423990404"
+}
+
+flag {
+    name: "move_user_display_settings_to_de_storage"
+    namespace: "windowing_sdk"
+    description: "Moves non-system user display settings from CE to DE storage to resolve early user setup access issues."
+    bug: "442757820"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "pause_invisible_activity"
+    namespace: "windowing_sdk"
+    description: "Pause the invisible activity vs. stopping it after idle."
+    bug: "457585218"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "assist_display_id_public"
+    namespace: "windowing_sdk"
+    description: "Make the preferred display id extra for launching assistant public."
+    bug: "428619705"
+    is_exported: true
+}
+
+flag {
+    name: "always_move_task_to_back_on_back_pressed_feature_flag"
+    namespace: "watch_software_performance"
+    description: "Enable the alwaysMoveTaskToBackOnBackPressed feature"
+    bug: "444439703"
+}
+
+flag {
+    namespace: "windowing_sdk"
+    name: "enable_force_opaque"
+    description: "Enable to make task force opaque"
+    bug: "441101757"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    name: "track_launch_originator"
+    namespace: "windowing_sdk"
+    description: "Track origination for the consecutive launch among trampoline activities"
+    bug: "456621541"
+}
+
+flag {
+    namespace: "windowing_sdk"
+    name: "clear_lock_task_when_task_end"
+    description: "Clear the lock task when the last activity in the task finishes"
+    bug: "461662709"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}
+
+flag {
+    namespace: "windowing_sdk"
+    name: "use_caller_token_in_launcher_apps"
+    description: "Pass caller's activity token in LauncherApps to fix task property inheritance (e.g. launcher shortcut move bubbled task to fullscreen)"
+    bug: "389810202"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}

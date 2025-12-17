@@ -1,0 +1,35 @@
+package: "android.app.appfunctions.flags"
+container: "system"
+
+flag {
+    name: "enable_app_function_manager"
+    is_exported: true
+    is_fixed_read_only: true
+    namespace: "machine_learning"
+    description: "This flag the new App Function manager system service."
+    bug: "357551503"
+}
+
+flag {
+    name: "enable_dynamic_app_functions"
+    is_exported: true
+    namespace: "app_function"
+    description: "This flags the Dynamic App Functions Feature."
+    bug: "445901741"
+}
+
+flag {
+    name: "enable_app_interaction_api"
+    is_exported: true
+    namespace: "app_function"
+    description: "This flags the App Interaction Feature."
+    bug: "452916227"
+}
+
+flag {
+    name: "enable_app_function_permission_v2"
+    is_exported: true
+    namespace: "app_function"
+    description: "This flags the App Interaction Feature."
+    bug: "443924426"
+}
