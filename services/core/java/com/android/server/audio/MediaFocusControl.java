@@ -100,6 +100,10 @@ public class MediaFocusControl implements PlayerFocusEnforcer {
     private final @NonNull PlayerFocusEnforcer mFocusEnforcer;
     private boolean mMultiAudioFocusEnabled = false;
 
+    boolean isMultiAudioFocusEnabled() {
+        return mMultiAudioFocusEnabled;
+    }
+
     private final Object mExtFocusChangeLock = new Object();
     @GuardedBy("mExtFocusChangeLock")
     private long mExtFocusChangeCounter;
