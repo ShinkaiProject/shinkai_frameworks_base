@@ -37,7 +37,7 @@ import java.util.concurrent.TimeUnit;
 public final class AttestationService extends SystemService {
     private static final String TAG = AttestationService.class.getSimpleName();
     private static final String API =
-            Resources.getSystem().getString(com.android.internal.R.string.config_pifUpdateUrl);
+            Resources.getSystem().getString(com.android.internal.R.string.config_buildTagUpdateUrl);
 
     private static final String DATA_FILE = "gms_certified_props.json";
 
