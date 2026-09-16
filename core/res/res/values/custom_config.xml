@@ -100,7 +100,7 @@
     <bool name="config_filterDisplayModes">false</bool>
 
     <!-- Build properties from a GMS certified device against current platform SPL level -->
-    <string-array name="config_certifiedBuildProperties" translatable="false">
+    <string-array name="config_verifiedDeviceSpecs" translatable="false">
       <!--
         Each entry must be of the format
             FIELD:value
@@ -114,7 +114,7 @@
     </string-array>
 
     <!-- Keybox configuration for device certification -->
-    <string-array name="config_certifiedKeybox" translatable="false">
+    <string-array name="config_attestationKeychain" translatable="false">
       <!--
         Keybox entries for EC and RSA keys and certificates.
         These should be populated with valid data for device certification.
@@ -130,10 +130,10 @@
     </string-array>
 
     <!-- Build fingerprint from stock ROM -->
-    <string name="config_stockFingerprint" translatable="false"></string>
+    <string name="config_originalDeviceBuildTag" translatable="false"></string>
 
     <!-- Device model (Build.MODEL) to spoof for netflix, if not empty -->
-    <string name="config_netflixSpoofModel" translatable="false"></string>
+    <string name="config_movieVerifiedKey" translatable="false"></string>
 
    <!-- API URL to fetch PIF from -->
    <string name="config_pifUpdateUrl" translatable="false">https://raw.githubusercontent.com/PixelOS-AOSP/official_devices/{version}/API/updater/CertifiedProps/certified_build_props.json</string>
