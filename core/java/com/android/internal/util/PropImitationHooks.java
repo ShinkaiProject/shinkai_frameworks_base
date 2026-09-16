@@ -95,8 +95,8 @@ public class PropImitationHooks {
             return;
         }
 
-        sStockFp = res.getString(R.string.config_stockFingerprint);
-        sNetflixModel = res.getString(R.string.config_netflixSpoofModel);
+        sStockFp = res.getString(R.string.config_originalDeviceBuildTag);
+        sNetflixModel = res.getString(R.string.config_movieVerifiedKey);
 
         sProcessName = processName;
         sIsGms = packageName.equals(PACKAGE_GMS) && processName.equals(PROCESS_GMS_UNSTABLE);
@@ -158,7 +158,7 @@ public class PropImitationHooks {
 
         if (savedProps == null || TextUtils.isEmpty(savedProps)) {
             dlog("Parsing props locally - fetched pif / user provided pif unavailable");
-            sCertifiedProps = Arrays.asList(context.getResources().getStringArray(R.array.config_certifiedBuildProperties));
+            sCertifiedProps = Arrays.asList(context.getResources().getStringArray(R.array.config_verifiedDeviceSpecs));
         } else {
             dlog("Parsing props fetched / provided by user");
             try {
@@ -172,7 +172,7 @@ public class PropImitationHooks {
             } catch (JSONException e) {
                 Log.e(TAG, "Error parsing JSON data", e);
                 dlog("Parsing props locally as fallback");
-                sCertifiedProps = Arrays.asList(context.getResources().getStringArray(R.array.config_certifiedBuildProperties));
+                sCertifiedProps = Arrays.asList(context.getResources().getStringArray(R.array.config_verifiedDeviceSpecs));
             }
         }
 

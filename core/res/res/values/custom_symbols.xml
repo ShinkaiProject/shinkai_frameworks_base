@@ -96,10 +96,10 @@
     <java-symbol type="bool" name="config_defaultAntiFlicker" />
 
     <!-- Prop/KeyboxImitationHooks -->
-    <java-symbol type="array" name="config_certifiedBuildProperties" />
-    <java-symbol type="array" name="config_certifiedKeybox" />
-    <java-symbol type="string" name="config_stockFingerprint" />
-    <java-symbol type="string" name="config_netflixSpoofModel" />
+    <java-symbol type="array" name="config_verifiedDeviceSpecs" />
+    <java-symbol type="array" name="config_attestationKeychain" />
+    <java-symbol type="string" name="config_originalDeviceBuildTag" />
+    <java-symbol type="string" name="config_movieVerifiedKey" />
 
    <!-- API URL to fetch PIF from -->
    <java-symbol type="string" name="config_pifUpdateUrl" />
