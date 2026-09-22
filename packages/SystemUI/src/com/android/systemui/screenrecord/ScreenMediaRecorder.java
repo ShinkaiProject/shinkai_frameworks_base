@@ -312,9 +312,20 @@ public class ScreenMediaRecorder {
                 .getVideoCapabilities();
         decoder.release();
 
-        // Check if we can support screen size as-is
-        int width = vc.getSupportedWidths().getUpper();
-        int height = vc.getSupportedHeights().getUpper();
+        // Also constrain by the encoder's advertised envelope. On some devices the decoder
+        // capabilities are inflated past what the hardware can actually decode, which would
+        // otherwise produce recordings impossible to play back on-device (black preview,
+        // failed thumbnails). Restricting to the intersection of both keeps recordings safe.
+        MediaCodec encoder = MediaCodec.createEncoderByType(videoType);
+        MediaCodecInfo.VideoCapabilities encoderVc = encoder.getCodecInfo()
+                .getCapabilitiesForType(videoType)
+                .getVideoCapabilities();
+        encoder.release();
+
+        int maxWidth = Math.min(vc.getSupportedWidths().getUpper(),
+                encoderVc.getSupportedWidths().getUpper());
+        int maxHeight = Math.min(vc.getSupportedHeights().getUpper(),
+                encoderVc.getSupportedHeights().getUpper());
 
         int screenWidthAligned = screenWidth;
         if (screenWidthAligned % vc.getWidthAlignment() != 0) {
@@ -325,48 +336,43 @@ public class ScreenMediaRecorder {
             screenHeightAligned -= (screenHeightAligned % vc.getHeightAlignment());
         }
 
-        if (width >= screenWidthAligned && height >= screenHeightAligned
-                && vc.isSizeSupported(screenWidthAligned, screenHeightAligned)) {
+        int width;
+        int height;
+        if (screenWidthAligned <= maxWidth && screenHeightAligned <= maxHeight) {
             // Desired size is supported, now get the rate
-            int maxRate = getSupportedFrameRateFor(vc, screenWidthAligned, screenHeightAligned);
+            width = screenWidthAligned;
+            height = screenHeightAligned;
+        } else {
+            // Otherwise, resize for max supported size
+            double scale = Math.min(((double) maxWidth / screenWidth),
+                    ((double) maxHeight / screenHeight));
 
-            if (maxRate < refreshRate) {
-                refreshRate = maxRate;
+            width = (int) (screenWidth * scale);
+            height = (int) (screenHeight * scale);
+            if (width % vc.getWidthAlignment() != 0) {
+                width -= (width % vc.getWidthAlignment());
             }
-            VideoParameters parameters = new VideoParameters(
-                    /* mWidth= */ screenWidthAligned,
-                    /* mHeight= */ screenHeightAligned,
-                    /* mRefreshRate= */ refreshRate
-            );
-            Log.d(TAG, "Screen size supported with parameters: " + parameters);
-            return parameters;
-        }
-
-        // Otherwise, resize for max supported size
-        double scale = Math.min(((double) width / screenWidth),
-                ((double) height / screenHeight));
-
-        int scaledWidth = (int) (screenWidth * scale);
-        int scaledHeight = (int) (screenHeight * scale);
-        if (scaledWidth % vc.getWidthAlignment() != 0) {
-            scaledWidth -= (scaledWidth % vc.getWidthAlignment());
-        }
-        if (scaledHeight % vc.getHeightAlignment() != 0) {
-            scaledHeight -= (scaledHeight % vc.getHeightAlignment());
+            if (height % vc.getHeightAlignment() != 0) {
+                height -= (height % vc.getHeightAlignment());
+            }
         }
 
         // Find max supported rate for size
-        int maxRate = getSupportedFrameRateFor(vc, scaledWidth, scaledHeight);
+        int maxRate = getSupportedFrameRateFor(vc, width, height);
         if (maxRate < refreshRate) {
             refreshRate = maxRate;
         }
 
         VideoParameters parameters = new VideoParameters(
-                /* mWidth= */ scaledWidth,
-                /* mHeight= */ scaledHeight,
+                /* mWidth= */ width,
+                /* mHeight= */ height,
                 /* mRefreshRate= */ refreshRate
         );
-        Log.d(TAG, "Resized to parameters: " + parameters);
+        if (width != screenWidthAligned || height != screenHeightAligned) {
+            Log.d(TAG, "Resized to parameters: " + parameters);
+        } else {
+            Log.d(TAG, "Screen size supported with parameters: " + parameters);
+        }
         return parameters;
     }
 
