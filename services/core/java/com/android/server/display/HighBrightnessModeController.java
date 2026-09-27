@@ -226,7 +226,7 @@ class HighBrightnessModeController {
 
     void onAmbientLuxChange(float ambientLux) {
         mAmbientLux = ambientLux;
-        if (!hbmControllerEnabled() || !mIsAutoBrightnessEnabled) {
+        if (!hbmControllerEnabled()) {
             return;
         }
 
@@ -402,7 +402,7 @@ class HighBrightnessModeController {
             return mHbmData != null && mBrightness > mHbmData.transitionPoint;
         }
         return !mIsHdrLayerPresent
-                && (mIsAutoBrightnessEnabled && mIsTimeAvailable && mIsInAllowedAmbientRange
+                && (mIsTimeAvailable && mIsInAllowedAmbientRange
                 && !mIsBlockedByLowPowerMode);
     }
 

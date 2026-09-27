@@ -490,7 +490,7 @@ public class AutomaticBrightnessController {
         if (userInitiatedChange && enable) {
             prepareBrightnessAdjustmentSample();
         }
-        changed |= setLightSensorEnabled(enable);
+        changed |= setLightSensorEnabled(true);
 
         boolean isBrightnessThrottled = mBrightnessClamperController.isThrottled();
         if (mIsBrightnessThrottled != isBrightnessThrottled) {
