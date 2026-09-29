@@ -11222,6 +11222,23 @@ public class AudioService extends IAudioService.Stub
                                 }
                             }
                         }
+                        // Mirror STREAM_VOICE_CALL volume across the common in-call output
+                        // routes (earpiece / speaker / wired headset) so the level the user
+                        // set does not silently reset to a stale per-device value when the
+                        // active route changes mid-call (e.g. toggling loudspeaker).
+                        if (mStreamType == AudioSystem.STREAM_VOICE_CALL) {
+                            final int[] voiceCallMirrorDevices = {
+                                    AudioSystem.DEVICE_OUT_EARPIECE,
+                                    AudioSystem.DEVICE_OUT_SPEAKER,
+                                    AudioSystem.DEVICE_OUT_WIRED_HEADSET,
+                                    AudioSystem.DEVICE_OUT_WIRED_HEADPHONE,
+                            };
+                            for (int otherDevice : voiceCallMirrorDevices) {
+                                if (otherDevice != device) {
+                                    mIndexMap.put(otherDevice, index);
+                                }
+                            }
+                        }
                         // Mirror BLE unicast headset and broadcast volume changes
                         if (device == AudioSystem.DEVICE_OUT_BLE_HEADSET) {
                             mIndexMap.put(AudioSystem.DEVICE_OUT_BLE_BROADCAST, index);
