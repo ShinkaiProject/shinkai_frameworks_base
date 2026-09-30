@@ -127,23 +127,23 @@ public final class PixelPropsUtils {
     // MODEL=Pixel, and the fingerprint must be from the marlin device.
     // We use Android 9 (PPR1...) fingerprint because it's the last version
     // marlin received, and Photos trusts it.
-    private static final Map<String, Object> PROPS_PIXEL_XL = Map.of(
-            Map.entry("BRAND",         "google")
-            Map.entry("MANUFACTURER",  "Google")
-            Map.entry("DEVICE",        "marlin")
-            Map.entry("PRODUCT",       "marlin")
-            Map.entry("MODEL",         "Pixel XL")
-            Map.entry("FINGERPRINT",   "google/marlin/marlin:10/QP1A.191005.007.A3/5972272:user/release-keys")
-            Map.entry("HARDWARE", "marlin")
-            Map.entry("BOARD", "marlin")
-            Map.entry("VERSION.RELEASE", "10")
-            Map.entry("VERSION.SDK_INT", "29")
-            Map.entry("ID", "QP1A.191005.007.A3")
-            Map.entry("DISPLAY", "QP1A.191005.007.A3")
-            Map.entry("VERSION.INCREMENTAL", "5972272")
-            Map.entry("TYPE", "user")
-            Map.entry("TAGS", "release-keys")
-            Map.entry("VERSION.SECURITY_PATCH", "2019-10-06")
+    private static final Map<String, Object> PROPS_PIXEL_XL = Map.ofEntries(
+            Map.entry("BRAND",         "google"),
+            Map.entry("MANUFACTURER",  "Google"),
+            Map.entry("DEVICE",        "marlin"),
+            Map.entry("PRODUCT",       "marlin"),
+            Map.entry("MODEL",         "Pixel XL"),
+            Map.entry("FINGERPRINT",   "google/marlin/marlin:10/QP1A.191005.007.A3/5972272:user/release-keys"),
+            Map.entry("HARDWARE", "marlin"),
+            Map.entry("BOARD", "marlin"),
+            Map.entry("VERSION.RELEASE", "10"),
+            Map.entry("VERSION.SDK_INT", "29"),
+            Map.entry("ID", "QP1A.191005.007.A3"),
+            Map.entry("DISPLAY", "QP1A.191005.007.A3"),
+            Map.entry("VERSION.INCREMENTAL", "5972272"),
+            Map.entry("TYPE", "user"),
+            Map.entry("TAGS", "release-keys"),
+            Map.entry("VERSION.SECURITY_PATCH", "2019-10-06"),
             Map.entry("DEVICE_INITIAL_SDK_INT","25")
 
     );
@@ -529,7 +529,7 @@ public final class PixelPropsUtils {
         }
 
         // Allow 2017-era Pixel features. This is the fallback tier.
-        if (name.contains("PIXEL_EXPERIENCE")) || (name.contains("PIXEL_2017")) {
+        if (name.contains("PIXEL_EXPERIENCE") || name.contains("PIXEL_2017")) {
             dlog("Feature [" + name + "]: forced TRUE for Photos");
             return true;
         }
