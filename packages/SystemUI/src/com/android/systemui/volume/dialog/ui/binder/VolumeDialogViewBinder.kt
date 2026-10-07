@@ -162,8 +162,8 @@ constructor(
                     )
                     if (isVolumeDialogVertical) {
                         mainSliderContainer?.updateMargin(
-                            top = getSliderVerticalMargin() - view.paddingTop,
-                            bottom = getSliderVerticalMargin() - view.paddingBottom,
+                            top = getSliderTopMargin(view) - view.paddingTop,
+                            bottom = getSliderBottomMargin(view) - view.paddingBottom,
                         )
                     } else {
                         mainSliderContainer?.updateMargin(
@@ -183,6 +183,32 @@ constructor(
             with(viewBinder) { bind(root) }
         }
     }
+
+    private fun isLandscape(view: View): Boolean =
+        view.resources.configuration.orientation ==
+            android.content.res.Configuration.ORIENTATION_LANDSCAPE
+
+    /**
+     * Space above the main slider. In landscape only the ringer needs room here, so the whole panel
+     * (ringer + slider + bottom buttons) can be centered on the screen height.
+     */
+    private fun getSliderTopMargin(view: View): Int =
+        if (isLandscape(view)) {
+            view.resources.getDimensionPixelSize(R.dimen.volume_dialog_land_slider_top_margin)
+        } else {
+            getSliderVerticalMargin()
+        }
+
+    /**
+     * Space below the main slider. In landscape this is sized for the bottom buttons (live caption,
+     * per-app volume, mixer) so they are not pushed off the screen.
+     */
+    private fun getSliderBottomMargin(view: View): Int =
+        if (isLandscape(view)) {
+            view.resources.getDimensionPixelSize(R.dimen.volume_dialog_land_slider_bottom_margin)
+        } else {
+            getSliderVerticalMargin()
+        }
 
     private fun CoroutineScope.animateVisibility(
         view: View,

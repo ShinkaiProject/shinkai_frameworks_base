@@ -2212,6 +2212,10 @@
     -->
     <dimen name="volume_dialog_slider_vertical_margin">124dp</dimen>
     <dimen name="volume_dialog_slider_vertical_margin_with_captions_toggle">130dp</dimen>
+    <!-- Landscape only: top = ringer 60dp + spacing 4dp + 24dp edge gap -->
+    <dimen name="volume_dialog_land_slider_top_margin">88dp</dimen>
+    <!-- Landscape only: bottom = 3 buttons 144dp + spacing 4dp + bg bleed 6dp + 24dp edge gap -->
+    <dimen name="volume_dialog_land_slider_bottom_margin">178dp</dimen>
     <dimen name="volume_dialog_slider_horizontal_margin">81dp</dimen>
     <dimen name="volume_dialog_slider_horizontal_margin_with_captions_toggle">124dp</dimen>
     <dimen name="volume_dialog_half_opened_offset">-128dp</dimen>
