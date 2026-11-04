@@ -125,8 +125,16 @@ public final class PixelPropsUtils {
     // "original quality unlimited backup".
     // Photos looks at: BRAND=google, MANUFACTURER=Google, DEVICE=marlin,
     // MODEL=Pixel, and the fingerprint must be from the marlin device.
-    // We use Android 9 (PPR1...) fingerprint because it's the last version
-    // marlin received, and Photos trusts it.
+    // We use the last marlin (Android 10) fingerprint, and Photos trusts it.
+    //
+    // NOTE: do NOT spoof VERSION.SDK_INT / VERSION.RELEASE here.
+    // Photos reads Build.VERSION.SDK_INT at runtime to pick which
+    // registerReceiver() overload to call. Faking SDK 29 makes it use the
+    // legacy 2-arg registerReceiver() for "com.google.android.gms.phenotype.UPDATE",
+    // which the real (Android 14+) framework rejects with:
+    //   SecurityException: One of RECEIVER_EXPORTED or RECEIVER_NOT_EXPORTED
+    //   should be specified ...
+    // -> Google Photos crash-loops on every process start.
     private static final Map<String, Object> PROPS_PIXEL_XL = Map.ofEntries(
             Map.entry("BRAND",         "google"),
             Map.entry("MANUFACTURER",  "Google"),
@@ -136,16 +144,12 @@ public final class PixelPropsUtils {
             Map.entry("FINGERPRINT",   "google/marlin/marlin:10/QP1A.191005.007.A3/5972272:user/release-keys"),
             Map.entry("HARDWARE", "marlin"),
             Map.entry("BOARD", "marlin"),
-            Map.entry("VERSION.RELEASE", "10"),
-            Map.entry("VERSION.SDK_INT", "29"),
             Map.entry("ID", "QP1A.191005.007.A3"),
             Map.entry("DISPLAY", "QP1A.191005.007.A3"),
             Map.entry("VERSION.INCREMENTAL", "5972272"),
             Map.entry("TYPE", "user"),
             Map.entry("TAGS", "release-keys"),
-            Map.entry("VERSION.SECURITY_PATCH", "2019-10-06"),
-            Map.entry("DEVICE_INITIAL_SDK_INT","25")
-
+            Map.entry("VERSION.SECURITY_PATCH", "2019-10-06")
     );
 
     // ------------------------------------------------------------------
