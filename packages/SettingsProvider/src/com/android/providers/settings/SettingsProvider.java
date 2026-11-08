@@ -1326,8 +1326,9 @@ public class SettingsProvider extends ContentProvider {
             Slog.v(LOG_TAG, "setAllConfigSettings for prefix: " + prefix);
         }
 
-        enforceDeviceConfigWritePermission(getContext(), keyValues.keySet());
         final String callingPackage = resolveCallingPackage();
+
+        enforceDeviceConfigWritePermission(getContext(), keyValues.keySet());
 
         synchronized (mLock) {
             if (getSyncDisabledModeConfigLocked() != SYNC_DISABLED_MODE_NONE) {
@@ -2004,7 +2005,7 @@ public class SettingsProvider extends ContentProvider {
             boolean makeDefault, @CanBeCURRENT @UserIdInt int requestingUserId, int operation,
             boolean forceNotify, int mode, boolean overrideableByRestore) {
         // Make sure the caller can change the settings.
-        enforceHasAtLeastOnePermission(Manifest.permission.WRITE_SECURE_SETTINGS);
+        enforceWriteSecureSettingsPermission();
 
         // Resolve the userId on whose behalf the call is made.
         final int callingUserId = resolveCallingUserIdEnforcingPermissions(requestingUserId);
@@ -2683,6 +2684,21 @@ public class SettingsProvider extends ContentProvider {
         }
     }
 
+    /**
+     * Private Compute Core processes run under their own UID, so check the app they belong to.
+     */
+    private void enforceWriteSecureSettingsPermission() {
+        final int callingUid = Binder.getCallingUid();
+        if (android.app.privatecompute.flags.Flags.enablePccFrameworkSupport()
+                && Process.isPrivateComputeCoreUid(callingUid)
+                && getContext().checkPermission(Manifest.permission.WRITE_SECURE_SETTINGS, -1,
+                        Process.getAppUidForPrivateComputeCoreUid(callingUid))
+                        == PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        enforceHasAtLeastOnePermission(Manifest.permission.WRITE_SECURE_SETTINGS);
+    }
+
     private void enforceHasAtLeastOnePermission(String ...permissions) {
         for (String permission : permissions) {
             if (getContext().checkCallingOrSelfPermission(permission)
@@ -2690,7 +2706,7 @@ public class SettingsProvider extends ContentProvider {
                 return;
             }
         }
-        throw new SecurityException("Permission denial, must have one of: "
+        throw new SecurityException("Permission denial: " + resolveCallingPackage() + " must have one of: "
             + Arrays.toString(permissions));
     }
 
@@ -2719,6 +2735,13 @@ public class SettingsProvider extends ContentProvider {
                 context.checkCallingOrSelfPermission(
                 Manifest.permission.WRITE_DEVICE_CONFIG)
                 == PackageManager.PERMISSION_GRANTED;
+        boolean isRoot = Binder.getCallingUid() == Process.ROOT_UID;
+        String callingPackage = resolveCallingPackage();
+
+        if (isRoot || "com.google.android.gms".equals(callingPackage)) {
+            return;
+        }
+
         // Only the shell user and tests request the allowlist permission; this is used to force
         // the WRITE_ALLOWLISTED_DEVICE_CONFIG path to log any flags that need to be allowlisted.
         boolean isRestrictedShell = android.security.Flags.protectDeviceConfigFlags()
