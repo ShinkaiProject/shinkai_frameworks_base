@@ -1123,4 +1123,13 @@ interface IActivityManager {
     List<String> getSandboxEnabledSpoofSettings(String packageName, int userId);
     String getSandboxSpoofedSetting(String callingPackage, String settingName, int userId);
 
+    String getSpoofPifConfig();
+    String getSpoofGamePropsConfig();
+    String getSpoofTrickyStoreTarget();
+    String getSpoofTrickyStoreKeyBox();
+    String getSpoofTrickyStorePatch();
+    Bundle getDuckRkpState();
+    void setDuckRkpEnabled(boolean enabled);
+    void provisionDuckRkp();
+    void setSpoofTrickyStoreKeyBox(String keybox);
 }

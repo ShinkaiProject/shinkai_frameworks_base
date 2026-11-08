@@ -121,6 +121,7 @@ import com.android.internal.util.ConcurrentUtils;
 import com.android.internal.util.EmergencyAffordanceManager;
 import com.android.internal.util.FrameworkStatsLog;
 import com.android.internal.widget.ILockSettings;
+import com.android.server.AxExtServiceFactory;
 import com.android.server.accessibility.AccessibilityManagerService;
 import com.android.server.accounts.AccountManagerService;
 import com.android.server.adb.AdbService;
@@ -1013,6 +1014,8 @@ public final class SystemServer implements Dumpable {
 
             LocalServices.addService(SystemServiceManager.class, mSystemServiceManager);
 
+            AxExtServiceFactory.init(mSystemContext);
+
             // Lazily load the pre-installed system font map in SystemServer only if we're not doing
             // the optimized font loading in the FontManagerService.
             if (!com.android.text.flags.Flags.useOptimizedBoottimeFontLoading()
@@ -1304,6 +1307,7 @@ public final class SystemServer implements Dumpable {
         mActivityManagerService.setSystemServiceManager(mSystemServiceManager);
         mActivityManagerService.setInstaller(installer);
         mWindowManagerGlobalLock = atm.getGlobalLock();
+        AxExtServiceFactory.injectActivityManagerService(mActivityManagerService);
         t.traceEnd();
 
         // Data loader manager service needs to be started before package manager
@@ -1408,6 +1412,8 @@ public final class SystemServer implements Dumpable {
                             .BOOT_TIME_EVENT_ELAPSED_TIME__EVENT__PACKAGE_MANAGER_INIT_READY,
                     SystemClock.elapsedRealtime());
         }
+
+        AxExtServiceFactory.injectPackageManagerservice(mPackageManagerService);
 
         if (Build.IS_ARC) {
             t.traceBegin("StartArcSystemHealthService");
@@ -1767,6 +1773,7 @@ public final class SystemServer implements Dumpable {
             mSystemServiceManager.startBootPhase(t, SystemService.PHASE_WAIT_FOR_SENSOR_SERVICE);
             wm = WindowManagerService.main(context, inputManager, !mFirstBoot,
                     new PhoneWindowManager(), mActivityManagerService.mActivityTaskManager);
+            AxExtServiceFactory.injectWindowManagerService(wm);
             ServiceManager.addService(Context.WINDOW_SERVICE, wm, /* allowIsolated= */ false,
                     DUMP_FLAG_PRIORITY_CRITICAL | DUMP_FLAG_PRIORITY_HIGH
                             | DUMP_FLAG_PROTO);
