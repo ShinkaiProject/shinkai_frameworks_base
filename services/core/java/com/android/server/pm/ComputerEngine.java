@@ -88,6 +88,7 @@ import android.content.pm.InstrumentationInfo;
 import android.content.pm.KeySet;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageInfoList;
+import android.content.pm.PackageInstaller;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManagerInternal;
 import android.content.pm.ParceledListSlice;
@@ -143,6 +144,7 @@ import com.android.internal.util.Preconditions;
 import com.android.modules.utils.TypedXmlSerializer;
 import com.android.server.LocalManagerRegistry;
 import com.android.server.ondeviceintelligence.OnDeviceIntelligenceManagerLocal;
+import com.android.server.pm.InstallSource;
 import com.android.server.pm.parsing.PackageInfoUtils;
 import com.android.server.pm.parsing.pkg.AndroidPackageUtils;
 import com.android.server.pm.permission.PermissionManagerServiceInternal;
@@ -430,6 +432,10 @@ public class ComputerEngine implements Computer {
     private final PackageManagerInternal.ExternalSourcesPolicy mExternalSourcesPolicy;
     private final CrossProfileIntentResolverEngine mCrossProfileIntentResolverEngine;
 
+    private static final String AURORA_SERVICES = "com.aurora.services";
+    private static final String AURORA_STORE = "com.aurora.store";
+    private static final String PLAY_STORE = "com.android.vending";
+
     // PackageManagerService attributes that are primitives are referenced through the
     // pms object directly.  Primitives are the only attributes so referenced.
     protected final PackageManagerService mService;
@@ -554,6 +560,42 @@ public class ComputerEngine implements Computer {
         if (callingPkg.equals(targetPackage)) return false;
 
         return true;
+    }
+
+    private static final int SPOOF_INSTALL_DISABLED = 0;
+    private static final int SPOOF_INSTALL_USER = 1;
+    private static final int SPOOF_INSTALL_SYSTEM = 2;
+    private static final String VENDING_PACKAGE = "com.android.vending";
+
+    private int shouldSpoofInstallSource(int callingUid, String targetPackage, int targetUserId) {
+        if (!isSystemReady() || targetPackage == null) {
+            return SPOOF_INSTALL_DISABLED;
+        }
+        if (!AxSandboxService.get().isPackageHidden(targetPackage, targetUserId)) {
+            return SPOOF_INSTALL_DISABLED;
+        }
+        if (callingUid == Process.SYSTEM_UID || callingUid == Process.ROOT_UID) {
+            return SPOOF_INSTALL_DISABLED;
+        }
+        if (Process.isIsolated(callingUid) || Process.isSdkSandboxUid(callingUid)) {
+            return SPOOF_INSTALL_DISABLED;
+        }
+
+        String callingPkg = null;
+        final ActivityManagerInternal ami = getAmInternal();
+        if (ami != null) {
+            callingPkg = ami.getPackageNameByPid(Binder.getCallingPid());
+        }
+        if (callingPkg == null || AxSandboxService.BLACKLISTED_PACKAGES.contains(callingPkg)
+                || callingPkg.equals(targetPackage)) {
+            return SPOOF_INSTALL_DISABLED;
+        }
+
+        final PackageStateInternal ps = mSettings.getPackage(targetPackage);
+        if (ps != null && ps.isSystem()) {
+            return SPOOF_INSTALL_SYSTEM;
+        }
+        return SPOOF_INSTALL_USER;
     }
 
     private final boolean isAppDetached(String packageName, int userId) {
@@ -5331,6 +5373,9 @@ public class ComputerEngine implements Computer {
     @Override
     public String getInstallerPackageName(@NonNull String packageName, @UserIdInt int userId) {
         final int callingUid = Binder.getCallingUid();
+        int spoofResult = shouldSpoofInstallSource(callingUid, packageName, userId);
+        if (spoofResult == SPOOF_INSTALL_USER) return VENDING_PACKAGE;
+        if (spoofResult == SPOOF_INSTALL_SYSTEM) return null;
         final InstallSource installSource = getInstallSource(packageName, callingUid, userId);
         if (installSource == null) {
             throw new IllegalArgumentException("Unknown package: " + packageName);
@@ -5361,6 +5406,23 @@ public class ComputerEngine implements Computer {
             return null;
         }
 
+        InstallSource installSource = ps.getInstallSource();
+        final String installerPackageName = installSource.mInstallerPackageName;
+        if (installSource != null && installerPackageName != null
+                && mSettings.getPackage(PLAY_STORE) != null
+                && callingUid != Process.SYSTEM_UID
+                && (AURORA_STORE.equals(installerPackageName)
+                || AURORA_SERVICES.equals(installerPackageName))) {
+            return InstallSource.create(PLAY_STORE, PLAY_STORE, PLAY_STORE,
+                            installSource.mInstallerPackageUid,
+                            installSource.mOriginalInstallerUid,
+                            installSource.mUpdateOwnerPackageName,
+                            installSource.mInstallerAttributionTag,
+                            PackageInstaller.PACKAGE_SOURCE_STORE)
+                    .setInitiatingPackageSignatures(new PackageSignatures(
+                            mSettings.getPackage(PLAY_STORE).getSigningDetails()));
+        }
+
         return ps.getInstallSource();
     }
 
@@ -5371,6 +5433,20 @@ public class ComputerEngine implements Computer {
         final int callingUid = Binder.getCallingUid();
         enforceCrossUserPermission(callingUid, userId, false /* requireFullPermission */,
                 false /* checkShell */, "getInstallSourceInfo");
+
+        int spoofResult = shouldSpoofInstallSource(callingUid, packageName, userId);
+        if (spoofResult == SPOOF_INSTALL_USER) {
+            return new InstallSourceInfo(
+                    VENDING_PACKAGE, null, VENDING_PACKAGE,
+                    VENDING_PACKAGE, VENDING_PACKAGE,
+                    android.content.pm.PackageInstaller.PACKAGE_SOURCE_STORE);
+        }
+        if (spoofResult == SPOOF_INSTALL_SYSTEM) {
+            return new InstallSourceInfo(
+                    null, null, null,
+                    null, null,
+                    android.content.pm.PackageInstaller.PACKAGE_SOURCE_UNSPECIFIED);
+        }
 
         String installerPackageName;
         String initiatingPackageName;
@@ -5405,6 +5481,10 @@ public class ComputerEngine implements Computer {
                     || (!isCallerSystemOrUpdateOwner && isCallerFromManagedUserOrProfile(userId))) {
                 updateOwnerPackageName = null;
             }
+        }
+
+        if ("com.aurora.store".equals(installerPackageName)) {
+            installerPackageName = "com.android.vending";
         }
 
         if (installSource.mIsInitiatingPackageUninstalled) {
@@ -5749,6 +5829,10 @@ public class ComputerEngine implements Computer {
     @Override
     public boolean isCallerInstallerOfRecord(@NonNull AndroidPackage pkg, int callingUid) {
         if (pkg == null) {
+            return false;
+        }
+        if (shouldSpoofInstallSource(callingUid, pkg.getPackageName(),
+                UserHandle.getUserId(callingUid)) != SPOOF_INSTALL_DISABLED) {
             return false;
         }
         final PackageStateInternal packageState = getPackageStateInternal(pkg.getPackageName());
