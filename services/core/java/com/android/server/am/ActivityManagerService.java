@@ -549,10 +549,15 @@ import com.android.server.utils.PriorityDump;
 import com.android.server.utils.Slogf;
 import com.android.server.utils.TimingsTraceAndSlog;
 import com.android.server.vr.VrManagerInternal;
+import com.android.internal.app.HiddenNotificationInfo;
+import com.android.internal.app.IAppLockStateListener;
+import com.android.internal.app.IAppSessionListener;
+import com.android.internal.app.IHiddenNotificationListener;
 import com.android.server.wm.ActivityMetricsLaunchObserver;
 import com.android.server.wm.ActivityServiceConnectionsHolder;
 import com.android.server.wm.ActivityTaskManagerInternal;
 import com.android.server.wm.ActivityTaskManagerService;
+import com.android.server.wm.AxSandboxService;
 import com.android.server.wm.WindowManagerInternal;
 import com.android.server.wm.WindowManagerService;
 import com.android.server.wm.WindowProcessController;
@@ -21287,5 +21292,186 @@ public class ActivityManagerService extends IActivityManager.Stub
         UUID errorId = mTraceErrorLogger.getOrCreateErrorId(anrId);
         mAnrWarningController.notifyAnrWarning(
                 uid, anrId, errorId, anrType, consumedTimeMs, timeoutMs, description);
+    }
+
+    @Override
+    public boolean isSandboxAppLocked(String packageName, int userId) {
+        return AxSandboxService.getInstance().isAppLocked(packageName, userId);
+    }
+
+    @Override
+    public int getSandboxAppLockState(String packageName, int userId) {
+        return AxSandboxService.getInstance().getAppLockState(packageName, userId);
+    }
+
+    @Override
+    public boolean isSandboxPackageHidden(String packageName, int userId) {
+        return AxSandboxService.getInstance().isPackageHidden(packageName, userId);
+    }
+
+    @Override
+    public boolean isSandboxPackageHiddenFromLauncher(String packageName, int userId) {
+        return AxSandboxService.getInstance().isPackageHiddenFromLauncher(packageName, userId);
+    }
+
+    @Override
+    public void addSandboxLockedApp(String packageName, int userId) {
+        AxSandboxService.getInstance().addLockedApp(packageName, userId);
+    }
+
+    @Override
+    public void removeSandboxLockedApp(String packageName, int userId) {
+        AxSandboxService.getInstance().removeLockedApp(packageName, userId);
+    }
+
+    @Override
+    public void setSandboxPackageHidden(String packageName, boolean hidden, int userId) {
+        AxSandboxService.getInstance().setPackageHidden(packageName, hidden, userId);
+    }
+
+    @Override
+    public void setSandboxPackageHiddenFromLauncher(String packageName, boolean hidden, int userId) {
+        AxSandboxService.getInstance().setPackageHiddenFromLauncher(packageName, hidden, userId);
+    }
+
+    @Override
+    public List<String> getSandboxLockedPackages(int userId) {
+        return AxSandboxService.getInstance().getLockedPackages(userId);
+    }
+
+    @Override
+    public List<String> getSandboxHiddenPackages(int userId) {
+        return AxSandboxService.getInstance().getHiddenPackages(userId);
+    }
+
+    @Override
+    public List<String> getSandboxHiddenFromLauncherPackages(int userId) {
+        return AxSandboxService.getInstance().getHiddenFromLauncherPackages(userId);
+    }
+
+    @Override
+    public List<String> getSandboxLockablePackages(int userId) {
+        return AxSandboxService.getInstance().getLockablePackages(userId);
+    }
+
+    @Override
+    public boolean isSandboxPackageLockable(String packageName, int userId) {
+        return AxSandboxService.getInstance().isPackageLockable(packageName, userId);
+    }
+
+    @Override
+    public void unlockSandboxApp(String packageName, int userId) {
+        AxSandboxService.getInstance().unlockApp(packageName, userId);
+    }
+
+    @Override
+    public void promptSandboxUnlock(String packageName, int userId) {
+        AxSandboxService.getInstance().promptUnlock(packageName, userId);
+    }
+
+    @Override
+    public void registerSandboxAppLockStateListener(IAppLockStateListener listener) {
+        AxSandboxService.getInstance().registerAppLockStateListener(listener);
+    }
+
+    @Override
+    public void unregisterSandboxAppLockStateListener(IAppLockStateListener listener) {
+        AxSandboxService.getInstance().unregisterAppLockStateListener(listener);
+    }
+
+    @Override
+    public void registerSandboxAppSessionListener(IAppSessionListener listener) {
+        AxSandboxService.getInstance().registerAppSessionListener(listener);
+    }
+
+    @Override
+    public void unregisterSandboxAppSessionListener(IAppSessionListener listener) {
+        AxSandboxService.getInstance().unregisterAppSessionListener(listener);
+    }
+
+    @Override
+    public void registerSandboxHiddenNotificationListener(IHiddenNotificationListener listener) {
+        AxSandboxService.getInstance().registerHiddenNotificationListener(listener);
+    }
+
+    @Override
+    public void unregisterSandboxHiddenNotificationListener(IHiddenNotificationListener listener) {
+        AxSandboxService.getInstance().unregisterHiddenNotificationListener(listener);
+    }
+
+    @Override
+    public List<HiddenNotificationInfo> getSandboxHiddenNotifications() {
+        return AxSandboxService.getInstance().getHiddenNotifications();
+    }
+
+    @Override
+    public void onSandboxHiddenNotificationPosted(HiddenNotificationInfo info) {
+        AxSandboxService.getInstance().onHiddenNotificationPosted(info);
+    }
+
+    @Override
+    public void onSandboxHiddenNotificationRemoved(String key) {
+        AxSandboxService.getInstance().onHiddenNotificationRemoved(key);
+    }
+
+    @Override
+    public boolean isSandboxPackageSandboxed(String packageName, int userId) {
+        return AxSandboxService.getInstance().isPackageSandboxed(packageName, userId);
+    }
+
+    @Override
+    public void addSandboxPackage(String packageName, int userId) {
+        AxSandboxService.getInstance().addSandboxedPackage(packageName, userId);
+    }
+
+    @Override
+    public void removeSandboxPackage(String packageName, int userId) {
+        AxSandboxService.getInstance().removeSandboxedPackage(packageName, userId);
+    }
+
+    @Override
+    public List<String> getSandboxPackages(int userId) {
+        return AxSandboxService.getInstance().getSandboxedPackages(userId);
+    }
+
+    @Override
+    public void setSandboxRestrictedGids(String packageName, int[] gids, int userId) {
+        AxSandboxService.getInstance().setRestrictedGids(packageName, gids, userId);
+    }
+
+    @Override
+    public int[] getSandboxRestrictedGids(String packageName, int userId) {
+        return AxSandboxService.getInstance().getRestrictedGids(packageName, userId);
+    }
+
+    @Override
+    public boolean isSandboxDataIsolationEnabled(String packageName, int userId) {
+        return AxSandboxService.getInstance().isSandboxDataIsolationEnabled(packageName, userId);
+    }
+
+    @Override
+    public void setSandboxDataIsolationEnabled(String packageName, boolean enabled, int userId) {
+        AxSandboxService.getInstance().setSandboxDataIsolationEnabled(packageName, enabled, userId);
+    }
+
+    @Override
+    public boolean isSandboxSpoofSettingEnabled(String packageName, String settingKey, int userId) {
+        return AxSandboxService.getInstance().isSpoofSettingEnabled(packageName, settingKey, userId);
+    }
+
+    @Override
+    public void setSandboxSpoofSettingEnabled(String packageName, String settingKey,
+            boolean enabled, int userId) {
+        AxSandboxService.getInstance().setSpoofSettingEnabled(packageName, settingKey, enabled, userId);
+    }
+
+    @Override
+    public List<String> getSandboxEnabledSpoofSettings(String packageName, int userId) {
+        return AxSandboxService.getInstance().getEnabledSpoofSettings(packageName, userId);
+    }
+
+    @Override
+    public String getSandboxSpoofedSetting(String callingPackage, String settingName, int userId) {
+        return AxSandboxService.getInstance().getSpoofedSetting(callingPackage, settingName, userId);
     }
 }

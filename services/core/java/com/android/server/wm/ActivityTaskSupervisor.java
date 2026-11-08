@@ -820,6 +820,12 @@ public class ActivityTaskSupervisor implements RecentTasks.Callbacks {
         }
 
         final Task task = r.getTask();
+        if (task == null) {
+            // The record was detached from its task while the pause was in flight (e.g. the
+            // task was removed or the activity finished), so there is nothing left to start.
+            Slog.w(TAG, "realStartActivityLocked: " + r + " is no longer attached to a task");
+            return false;
+        }
         if (andResume) {
             // Try pausing the existing resumed activity in the Task if any.
             if (task.pauseActivityIfNeeded(r, "realStart")) {
@@ -1903,6 +1909,10 @@ public class ActivityTaskSupervisor implements RecentTasks.Callbacks {
             }
             mBalController.checkActivityAllowedToClearTask(
                             task, callingUid, callingPid, callerActivityClassName);
+            final AxSandboxService sandboxService = AxSandboxService.get();
+            if (sandboxService != null) {
+                sandboxService.removeTask(task, reason);
+            }
         } finally {
             task.mInRemoveTask = false;
             mService.mChainTracker.endPartial();
@@ -3013,6 +3023,9 @@ public class ActivityTaskSupervisor implements RecentTasks.Callbacks {
                     // Don't move home forward if task is in multi window mode
                     moveHomeTaskForward = false;
                 }
+
+                AxSandboxService.get().clearUnlockedApp();
+                AxSandboxService.get().lockTopApp(task, "startActivityFromRecents");
 
                 if (moveHomeTaskForward) {
                     // We always want to return to the home activity instead of the recents
