@@ -124,4 +124,14 @@
 
     <!-- Lock gesture -->
     <java-symbol type="string" name="gesture_locked_warning" />
+
+    <!-- Launcher spoofing & bypass packages -->
+    <java-symbol type="array" name="config_launcherComponents" />
+    <java-symbol type="array" name="config_launcherPackages" />
+    <java-symbol type="array" name="config_fgsTypeValidationBypassPackages"/>
+    <java-symbol type="array" name="config_alarmManagerValidationBypassPackages"/>
+    <java-symbol type="array" name="config_broadcastReceiverValidationBypassPackages"/>
+
+    <!-- Netflix spoof model -->
+    <java-symbol type="string" name="config_movieVerifiedKey" />
 </resources>
