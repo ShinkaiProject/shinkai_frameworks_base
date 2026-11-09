@@ -14752,6 +14752,12 @@ public final class Settings {
          * @hide
          */
         @Readable
+        public static final String PER_APPS_DEVICE_SPOOF = "per_apps_device_spoof";
+
+        /**
+         * @hide
+         */
+        @Readable
         public static final String PER_APPS_DEVICE_SPOOF_ENABLED = "per_apps_device_spoof_enabled";
 
         /**

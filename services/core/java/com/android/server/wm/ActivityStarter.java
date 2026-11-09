@@ -111,6 +111,7 @@ import android.app.WindowConfiguration.WindowingMode;
 import android.app.compat.CompatChanges;
 import android.compat.annotation.ChangeId;
 import android.compat.annotation.Overridable;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.IIntentSender;
 import android.content.Intent;
