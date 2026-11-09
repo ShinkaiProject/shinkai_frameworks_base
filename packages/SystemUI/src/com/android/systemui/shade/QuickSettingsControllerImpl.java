@@ -2464,6 +2464,13 @@ public class QuickSettingsControllerImpl implements QuickSettingsController, Dum
         }
     }
 
+    public void onAppLockerUpdated(String packageName) {
+        if (mNotificationStackScrollLayoutController != null
+                && mNotificationStackScrollLayoutController.getView() != null) {
+            mNotificationStackScrollLayoutController.getView().onAppLockerUpdate(packageName);
+        }
+    }
+
     interface ExpansionHeightSetToMaxListener {
         void onExpansionHeightSetToMax(boolean requestPaddingUpdate);
     }
