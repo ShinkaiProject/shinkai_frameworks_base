@@ -136,6 +136,7 @@ java_library_static {
         ":android.hardware.tv.hdmi.connection-V1-java-source",
         ":android.hardware.tv.hdmi.earc-V1-java-source",
         ":android.hardware.tv.mediaquality-V2-java-source",
+        ":ax_sandbox_server_sources",
         ":statslog-art-java-gen",
         ":statslog-contexthub-java-gen",
         ":statslog-crashrecovery-java-gen",
@@ -192,6 +193,7 @@ java_library_static {
     ],
 
     static_libs: [
+        "vendor.evo.duckrkp-V1-java",
         "android.frameworks.vibrator-V1-java", // AIDL
         "android.frameworks.devicestate-V1-java", // AIDL
         "android.hardware.authsecret-V1.0-java",

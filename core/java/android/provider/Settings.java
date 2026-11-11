@@ -111,7 +111,6 @@ import android.widget.Editor;
 import com.android.internal.annotations.GuardedBy;
 import com.android.internal.util.Preconditions;
 
-import com.android.internal.util.evolution.HideDeveloperStatusUtils;
 
 import java.io.IOException;
 import java.lang.annotation.ElementType;
@@ -4806,9 +4805,6 @@ public final class Settings {
         @UnsupportedAppUsage
         public static int getIntForUser(ContentResolver cr, String name, int def,
                 @CanBeCURRENT @UserIdInt int userId) {
-            if (HideDeveloperStatusUtils.shouldHideDevStatus(cr, cr.getPackageName(), name)) {
-                return 0 /* Disabled */;
-            }
             String v = getStringForUser(cr, name, userId);
             return parseIntSettingWithDefault(v, def);
         }
@@ -4841,9 +4837,6 @@ public final class Settings {
         public static int getIntForUser(ContentResolver cr, String name,
                 @CanBeCURRENT @UserIdInt int userId)
                 throws SettingNotFoundException {
-            if (HideDeveloperStatusUtils.shouldHideDevStatus(cr, cr.getPackageName(), name)) {
-                return 0 /* Disabled */;
-            }
             String v = getStringForUser(cr, name, userId);
             return parseIntSetting(v, name);
         }
@@ -8178,9 +8171,6 @@ public final class Settings {
         @UnsupportedAppUsage
         public static int getIntForUser(ContentResolver cr, String name, int def,
                 @CanBeCURRENT @UserIdInt int userId) {
-            if (HideDeveloperStatusUtils.shouldHideDevStatus(cr, cr.getPackageName(), name)) {
-                return 0 /* Disabled */;
-            }
             String v = getStringForUser(cr, name, userId);
             return parseIntSettingWithDefault(v, def);
         }
@@ -8212,9 +8202,6 @@ public final class Settings {
         public static int getIntForUser(ContentResolver cr, String name,
                 @CanBeCURRENT @UserIdInt int userId)
                 throws SettingNotFoundException {
-            if (HideDeveloperStatusUtils.shouldHideDevStatus(cr, cr.getPackageName(), name)) {
-                return 0 /* Disabled */;
-            }
             String v = getStringForUser(cr, name, userId);
             return parseIntSetting(v, name);
         }
@@ -14062,27 +14049,6 @@ public final class Settings {
         public static final String GAME_OVERLAY = "game_overlay";
 
         /**
-         * User selectable PIF data.
-         * @hide
-         */
-        @Readable
-        public static final String PIF_DATA = "pif_data";
-
-        /**
-         * PIF data fetched from our repo.
-         * @hide
-         */
-        @Readable
-        public static final String FETCHED_PIF = "fetched_pif";
-
-        /**
-         * User selectable keybox data.
-         * @hide
-         */
-        @Readable
-        public static final String KEYBOX_DATA = "keybox_data";
-
-        /**
          * Network traffic indicator mode
          * 0 = Don't show network traffic indicator
          * 1 = Display up-stream traffic only
@@ -14108,13 +14074,6 @@ public final class Settings {
          * @hide
          */
         public static final String NETWORK_TRAFFIC_UNITS = "network_traffic_units";
-
-        /**
-         * Control whether to hide ADB and Developer settings enable status.
-         * @hide
-         */
-        @Readable
-        public static final String HIDE_DEVELOPER_STATUS = "hide_developer_status";
 
         /**
          * Keys we no longer back up under the current schema, but want to continue to
@@ -14781,6 +14740,101 @@ public final class Settings {
         @FlaggedApi("com.android.server.notification.favorites_incoming_call_lights")
         public static final String LIGHT_ANIMATION_FAVORITE_CALLS_ENABLED =
                 "light_animation_favorite_calls_enabled";
+
+        /**
+         * Custom device spoof profiles for per-app spoofing
+         * @hide
+         */
+        @Readable
+        public static final String CUSTOM_SPOOF_PROFILES = "custom_spoof_profiles";
+
+        /**
+         * @hide
+         */
+        @Readable
+        public static final String PER_APPS_DEVICE_SPOOF = "per_apps_device_spoof";
+
+        /**
+         * @hide
+         */
+        @Readable
+        public static final String PER_APPS_DEVICE_SPOOF_ENABLED = "per_apps_device_spoof_enabled";
+
+        /**
+         * @hide
+         */
+        @Readable
+        public static final String PER_APPS_DEVICE_SPOOF_CACHE = "per_apps_device_spoof_cache";
+
+        /**
+         * Whether to use PixelProps spoof for google apps
+         * @hide
+         */
+        @Readable
+        public static final String PI_PP_SPOOF = "pi_pp_spoof";
+
+        /**
+         * Whether to spoof Tensor features
+         * @hide
+         */
+        @Readable
+        public static final String PI_TENSOR_SPOOF = "pi_tensor_spoof";
+
+        /**
+         * Comma-separated package list of Tensor targets
+         * @hide
+         */
+        @Readable
+        public static final String TENSOR_TARGETS = "tensor_targets";
+
+        /**
+         * Whether to use PIF spoof for Play store
+         * @hide
+         */
+        @Readable
+        public static final String PI_VENDING_SPOOF = "pi_vending_spoof";
+
+        /**
+         * Whether to use spoof for photos
+         * @hide
+         */
+        @Readable
+        public static final String PI_PHOTOS_SPOOF = "pi_photos_spoof";
+
+        /**
+         * Whether to use spoof for snapchat
+         * @hide
+         */
+        @Readable
+        public static final String PI_SNAPCHAT_SPOOF = "pi_snapchat_spoof";
+
+        /**
+         * @hide
+         */
+        public static final String SPOOF_PIF_CONFIG = "spoof_pif_config";
+
+        /**
+         * @hide
+         */
+        public static final String SPOOF_GAMEPROPS_CONFIG = "spoof_gameprops_config";
+
+        /**
+         * @hide
+         */
+        public static final String SPOOF_TRICKYSTORE_TARGET = "spoof_trickystore_target";
+
+        /**
+         * @hide
+         */
+        public static final String SPOOF_TRICKYSTORE_KEYBOX = "spoof_trickystore_keybox";
+
+        /** @hide */
+        public static final String SPOOF_DUCK_RKP_ENABLED = "spoof_duck_rkp_enabled";
+
+        /**
+         * @hide
+         */
+        public static final String SPOOF_TRICKYSTORE_PATCH = "spoof_trickystore_patch";
     }
 
     /**
@@ -20424,9 +20478,6 @@ public final class Settings {
          * or not a valid integer.
          */
         public static int getInt(ContentResolver cr, String name, int def) {
-            if (HideDeveloperStatusUtils.shouldHideDevStatus(cr, cr.getPackageName(), name)) {
-                return 0 /* Disabled */;
-            }
             String v = getString(cr, name);
             return parseIntSettingWithDefault(v, def);
         }
@@ -20451,9 +20502,6 @@ public final class Settings {
          */
         public static int getInt(ContentResolver cr, String name)
                 throws SettingNotFoundException {
-            if (HideDeveloperStatusUtils.shouldHideDevStatus(cr, cr.getPackageName(), name)) {
-                return 0 /* Disabled */;
-            }
             String v = getString(cr, name);
             return parseIntSetting(v, name);
         }

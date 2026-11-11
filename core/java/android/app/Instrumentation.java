@@ -57,6 +57,7 @@ import android.ravenwood.annotation.RavenwoodKeepWholeClass;
 import android.ravenwood.annotation.RavenwoodRedirect;
 import android.ravenwood.annotation.RavenwoodRedirectionClass;
 import android.ravenwood.annotation.RavenwoodReplace;
+import android.security.gameprops.GamePropsSpoofService;
 import android.util.AndroidRuntimeException;
 import android.util.Log;
 import android.view.Display;
@@ -70,8 +71,6 @@ import android.view.Window;
 import android.view.WindowManagerGlobal;
 
 import com.android.internal.content.ReferrerIntent;
-import com.android.internal.util.PropImitationHooks;
-import com.android.internal.util.PixelPropsUtils;
 
 import java.io.File;
 import java.lang.annotation.Retention;
@@ -81,6 +80,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.concurrent.TimeoutException;
+
+import com.android.internal.util.custom.PixelPropsUtils;
 
 /**
  * Base class for implementing application instrumentation code.  When running
@@ -1363,8 +1364,8 @@ public class Instrumentation {
         Application app = getFactory(context.getPackageName())
                 .instantiateApplication(cl, className);
         app.attach(context);
-        PropImitationHooks.setProps(context);
         PixelPropsUtils.setProps(context);
+        GamePropsSpoofService.getInstance().applyPerAppSpoofFromContext(context);
         return app;
     }
     
@@ -1383,8 +1384,8 @@ public class Instrumentation {
             ClassNotFoundException {
         Application app = (Application)clazz.newInstance();
         app.attach(context);
-        PropImitationHooks.setProps(context);
         PixelPropsUtils.setProps(context);
+        GamePropsSpoofService.getInstance().applyPerAppSpoofFromContext(context);
         return app;
     }
 

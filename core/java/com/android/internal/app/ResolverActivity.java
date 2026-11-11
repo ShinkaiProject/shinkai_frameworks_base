@@ -473,7 +473,7 @@ public class ResolverActivity extends Activity implements
         // different "last chosen" activities in the different profiles, and PackageManager doesn't
         // provide any more information to help us select between them.
         boolean filterLastUsed = filterLastUsedConfig() && mSupportsAlwaysUseOption
-                && !isVoiceInteraction() && !shouldShowTabs() && !hasCloneProfile();
+                && !isVoiceInteraction() && !shouldShowTabs();
         mMultiProfilePagerAdapter =
                 createMultiProfilePagerAdapter(initialIntents, rList, filterLastUsed);
         if (configureContentView()) {
@@ -1307,14 +1307,9 @@ public class ResolverActivity extends Activity implements
             mAlwaysButton.setEnabled(false);
             return;
         }
-        // In case of clonedProfile being active, we do not allow the 'Always' option in the
-        // disambiguation dialog of Personal Profile as the package manager cannot distinguish
-        // between cross-profile preferred activities.
-        if (hasCloneProfile() && !mMultiProfilePagerAdapter
-                .getCurrentUserHandle().equals(mWorkProfileUserHandle)) {
-            mAlwaysButton.setEnabled(false);
-            return;
-        }
+        // In custom ROM environments, allow the 'Always' option even when a clone profile exists
+        // so users can set default app handlers. Cross-profile safety is preserved below by
+        // checking that ri.targetUserId == UserHandle.USER_CURRENT before enabling.
         boolean enabled = false;
         ResolveInfo ri = null;
         if (hasValidSelection) {
