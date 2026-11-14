@@ -34,6 +34,7 @@ import com.android.systemui.keyguard.KeyguardUnlockAnimationController;
 import com.android.systemui.keyguard.KeyguardWmStateRefactor;
 import com.android.systemui.keyguard.data.repository.InWindowLauncherUnlockAnimationRepository;
 import com.android.systemui.plugins.FalsingManager;
+import com.android.systemui.plugins.statusbar.StatusBarStateController;
 import com.android.systemui.shared.system.InputChannelCompat;
 import com.android.systemui.shared.system.InputMonitorCompat;
 import com.android.systemui.shared.system.TaskStackChangeListener;
@@ -92,6 +93,7 @@ public final class DoubleTapToSleepController implements CoreStartable {
     private final Context mContext;
     private final PowerManager mPowerManager;
     private final FalsingManager mFalsingManager;
+    private final StatusBarStateController mStatusBarStateController;
     private final Handler mMainHandler;
     private final Executor mBackgroundExecutor;
     private final CommandQueue mCommandQueue;
@@ -139,6 +141,7 @@ public final class DoubleTapToSleepController implements CoreStartable {
             Context context,
             PowerManager powerManager,
             FalsingManager falsingManager,
+            StatusBarStateController statusBarStateController,
             CommandQueue commandQueue,
             @Main Handler mainHandler,
             @Background Executor backgroundExecutor,
@@ -149,6 +152,7 @@ public final class DoubleTapToSleepController implements CoreStartable {
         mContext = context;
         mPowerManager = powerManager;
         mFalsingManager = falsingManager;
+        mStatusBarStateController = statusBarStateController;
         mCommandQueue = commandQueue;
         mMainHandler = mainHandler;
         mBackgroundExecutor = backgroundExecutor;
@@ -228,6 +232,7 @@ public final class DoubleTapToSleepController implements CoreStartable {
     private boolean canHandleGesture() {
         return mEnabled.get()
                 && mLauncherHomeForeground
+                && !mStatusBarStateController.isDozing()
                 && !mOverviewShown
                 && !mImeVisible
                 && !mBubbleExpanded;
