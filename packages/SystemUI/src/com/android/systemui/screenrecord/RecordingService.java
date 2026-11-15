@@ -699,9 +699,7 @@ public class RecordingService extends Service implements ScreenMediaRecorderList
 
         @Override
         public void stopRecording() throws RemoteException {
-            Intent intent = new Intent(RecordingService.this, RecordingService.class);
-            intent.setAction(ACTION_STOP_NOTIF);
-            RecordingService.this.startService(intent);
+            mController.stopRecording(StopReason.STOP_UNKNOWN);
         }
 
         @Override
